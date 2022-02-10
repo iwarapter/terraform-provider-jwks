@@ -1,0 +1,16 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0  # Use the ref you want to point at
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+        exclude: '^docs/.*$'
+      - id: check-added-large-files
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: master
+    hooks:
+      - id: go-fmt
+      - id: go-generate
+        exclude: '^tools/.*$'
+      - id: go-imports
+      - id: go-mod-tidy

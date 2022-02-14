@@ -53,7 +53,7 @@ func dataSourceJwksFromKeyRead(_ context.Context, d *schema.ResourceData, m inte
 		//handle pem encoded
 		keyData, err = ssh.ParseRawPrivateKey(dataBytes)
 		if err != nil {
-			keyData, err = x509.ParsePKIXPublicKey(dataBytes)
+			keyData, err = x509.ParsePKIXPublicKey(block.Bytes)
 			if err != nil {
 				return diag.Errorf("unable to parse private or public key pem")
 			}

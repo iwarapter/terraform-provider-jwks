@@ -13,7 +13,7 @@ func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{},
 		DataSourcesMap: map[string]*schema.Resource{
-			"jwks_from_pem": dataSourceJwksFromPem(),
+			"jwks_from_key": dataSourceJwksFromKey(),
 		},
 		ResourcesMap: map[string]*schema.Resource{},
 		ConfigureContextFunc: func(_ context.Context, _ *schema.ResourceData) (interface{}, diag.Diagnostics) {

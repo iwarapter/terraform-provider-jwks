@@ -1,5 +1,5 @@
-data "jwks_from_pem" "test" {
-  pem = <<EOF
+data "jwks_from_key" "pem_example" {
+  key = <<EOF
 -----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgUElV5mwqkloIrM8ZNZ7
 2gSCcnSJt7+/Usa5G+D15YQUAdf9c1zEekTfHgDP+04nw/uFNFaE5v1RbHaPxhZY
@@ -10,4 +10,8 @@ yCqmr8yjxkKJDVC2uRrr+sTSxfh7r6v24u/vp/QTmBIAlNPgadVAZw17iNNb7vjV
 7QIDAQAB
 -----END PUBLIC KEY-----
 EOF
+}
+
+data "jwks_from_key" "base64_der_example" {
+  key = data.aws_kms_public_key.example.public_key
 }

@@ -42,6 +42,7 @@ data "jwks_from_key" "base64_der_example" {
 ### Optional
 
 - **id** (String) The ID of this resource.
+- **kid** (String) Used to populate the kid field of the JWK.
 
 ### Read-Only
 

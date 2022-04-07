@@ -125,6 +125,18 @@ func TestAccJwksFromKeyDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "jwks", `{"crv":"P-384","kty":"EC","x":"QnSqFbKGdEiz_g0CoZFXBAvsMMbMBqqnZ3jJ_zrLxuBShDTmrsRoU7MCOALbt04f","y":"FoRI8H06aS1Wq1XsAbMiMLUqpl5joOWeUChxyPb0v-7B86IE9299UHBpbAfcnthd"}`),
 				),
 			},
+			{
+				Config: testAccJwksFromKeyWithKidDataSourceConfig(ecPrivateKeyDer(), "123"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "jwks", `{"crv":"P-384","d":"WL_isXL5n9Ux2yd2phRRMH_aPCZwVfghUEhEU9F0L0EKoi7MD0oRirlsqWuYsNwd","kid":"123","kty":"EC","x":"QnSqFbKGdEiz_g0CoZFXBAvsMMbMBqqnZ3jJ_zrLxuBShDTmrsRoU7MCOALbt04f","y":"FoRI8H06aS1Wq1XsAbMiMLUqpl5joOWeUChxyPb0v-7B86IE9299UHBpbAfcnthd"}`),
+				),
+			},
+			{
+				Config: testAccJwksFromKeyWithKidDataSourceConfig(ecPublicKeyDer(), "123"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "jwks", `{"crv":"P-384","kid":"123","kty":"EC","x":"QnSqFbKGdEiz_g0CoZFXBAvsMMbMBqqnZ3jJ_zrLxuBShDTmrsRoU7MCOALbt04f","y":"FoRI8H06aS1Wq1XsAbMiMLUqpl5joOWeUChxyPb0v-7B86IE9299UHBpbAfcnthd"}`),
+				),
+			},
 		},
 	})
 }
@@ -141,6 +153,17 @@ func testAccJwksFromKeyDataSourceConfig(data string) string {
 EOF
 	}
 	`, data)
+}
+
+func testAccJwksFromKeyWithKidDataSourceConfig(data, kid string) string {
+	return fmt.Sprintf(`
+	data "jwks_from_key" "test" {
+		key = <<EOF
+%s
+EOF
+		kid = %s
+	}
+	`, data, kid)
 }
 
 func privateKeyDer() string {

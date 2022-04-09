@@ -147,11 +147,11 @@ func testAccCheckJwksFromKeyDataSourceDestroy(s *terraform.State) error {
 
 func testAccJwksFromKeyDataSourceConfig(data string) string {
 	return fmt.Sprintf(`
-	data "jwks_from_key" "test" {
-		key = <<EOF
+data "jwks_from_key" "test" {
+  key = <<EOF
 %s
 EOF
-	}
+}
 	`, data)
 }
 

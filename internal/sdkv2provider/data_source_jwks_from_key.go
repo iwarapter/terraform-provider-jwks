@@ -34,7 +34,7 @@ func dataSourceJwksFromKeySchema() map[string]*schema.Schema {
 		"kid": {
 			Type:        schema.TypeString,
 			Optional:    true,
-			Description: `Is used to populate the kid field of the JWK.`,
+			Description: `Used to populate the kid field of the JWK.`,
 		},
 		"jwks": {
 			Type:        schema.TypeString,

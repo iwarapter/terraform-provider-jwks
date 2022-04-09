@@ -31,6 +31,11 @@ func dataSourceJwksFromKeySchema() map[string]*schema.Schema {
 			Required:    true,
 			Description: `Requires either a pem encoded or base64 der encoded public or private key.`,
 		},
+		"kid": {
+			Type:        schema.TypeString,
+			Optional:    true,
+			Description: `Is used to populate the kid field of the JWK.`,
+		},
 		"jwks": {
 			Type:        schema.TypeString,
 			Computed:    true,
@@ -77,6 +82,13 @@ func dataSourceJwksFromKeyRead(_ context.Context, d *schema.ResourceData, m inte
 	key, err := jwk.New(keyData)
 	if err != nil {
 		return diag.FromErr(err)
+	}
+	kid, ok := d.GetOk("kid")
+	if ok {
+		err = key.Set(jwk.KeyIDKey, kid.(string))
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	b, err := json.Marshal(key)
 	if err != nil {

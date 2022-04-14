@@ -7,7 +7,7 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.8.0
 	github.com/hashicorp/terraform-plugin-mux v0.6.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.13.0
-	github.com/lestrrat-go/jwx v1.2.22
+	github.com/lestrrat-go/jwx v1.2.23
 	golang.org/x/crypto v0.0.0-20220408190544-5352b0902921
 )
 

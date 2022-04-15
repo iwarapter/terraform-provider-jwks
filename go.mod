@@ -4,9 +4,9 @@ go 1.17
 
 require (
 	github.com/hashicorp/terraform-plugin-docs v0.7.0
-	github.com/hashicorp/terraform-plugin-go v0.8.0
+	github.com/hashicorp/terraform-plugin-go v0.9.0
 	github.com/hashicorp/terraform-plugin-mux v0.6.0
-	github.com/hashicorp/terraform-plugin-sdk/v2 v2.13.0
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.14.0
 	github.com/lestrrat-go/jwx v1.2.22
 	golang.org/x/crypto v0.0.0-20220408190544-5352b0902921
 )
@@ -38,7 +38,7 @@ require (
 	github.com/hashicorp/hc-install v0.3.1 // indirect
 	github.com/hashicorp/hcl/v2 v2.11.1 // indirect
 	github.com/hashicorp/logutils v1.0.0 // indirect
-	github.com/hashicorp/terraform-exec v0.16.0 // indirect
+	github.com/hashicorp/terraform-exec v0.16.1 // indirect
 	github.com/hashicorp/terraform-json v0.13.0 // indirect
 	github.com/hashicorp/terraform-plugin-log v0.3.0 // indirect
 	github.com/hashicorp/terraform-registry-address v0.0.0-20220131103327-5c1c5e123275 // indirect

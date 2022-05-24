@@ -7,8 +7,8 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.8.0
 	github.com/hashicorp/terraform-plugin-mux v0.6.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.13.0
-	github.com/lestrrat-go/jwx v1.2.22
-	golang.org/x/crypto v0.0.0-20220408190544-5352b0902921
+	github.com/lestrrat-go/jwx v1.2.25
+	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f
 )
 
 require (
@@ -22,7 +22,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect
-	github.com/goccy/go-json v0.9.6 // indirect
+	github.com/goccy/go-json v0.9.7 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/google/uuid v1.1.2 // indirect

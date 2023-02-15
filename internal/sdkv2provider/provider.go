@@ -7,13 +7,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-//Provider does stuff
-//
+// Provider does stuff
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{},
 		DataSourcesMap: map[string]*schema.Resource{
-			"jwks_from_key": dataSourceJwksFromKey(),
+			"jwks_from_key":         dataSourceJwksFromKey(),
+			"jwks_from_certificate": dataSourceJwksFromCertificate(),
 		},
 		ResourcesMap: map[string]*schema.Resource{},
 		ConfigureContextFunc: func(_ context.Context, _ *schema.ResourceData) (interface{}, diag.Diagnostics) {

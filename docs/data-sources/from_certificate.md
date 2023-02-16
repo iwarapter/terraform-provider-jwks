@@ -18,8 +18,8 @@ data "jwks_from_certificate" "pem_example" {
 }
 
 data "jwks_from_certificate" "pem_example_2" {
-  key                 = file("${path.module}/certificate.pem")
-  treat_independently = true
+  key = file("${path.module}/certificate.pem")
+  kid = "123"
 }
 ```
 
@@ -33,7 +33,7 @@ data "jwks_from_certificate" "pem_example_2" {
 ### Optional
 
 - `id` (String) The ID of this resource.
-- `treat_independently` (Boolean) Determines whether to generate JWK for only leaf certificate in a chain and put other certificates into x5c (default) or generate JWKs for each certificate in a chain
+- `kid` (String) Used to override the kid field of the JWK.
 
 ### Read-Only
 

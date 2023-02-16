@@ -12,11 +12,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
-	"math/big"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/lestrrat-go/jwx/jwk"
 )
 
 type Keys struct {
@@ -24,13 +23,12 @@ type Keys struct {
 }
 
 type Key struct {
-	Kty    *string  `json:"kty"`
-	X5C    []string `json:"x5c"`
-	N      *string  `json:"n"`
-	E      *string  `json:"e"`
-	Kid    *string  `json:"kid"`
-	X5T256 *string  `json:"x5t#256"`
-	X5Dn   *string  `json:"x5dn"`
+	Kty     *string  `json:"kty"`
+	X5C     []string `json:"x5c"`
+	N       *string  `json:"n"`
+	E       *string  `json:"e"`
+	Kid     *string  `json:"kid"`
+	X5TS256 *string  `json:"x5t#S256"`
 }
 
 func dataSourceJwksFromCertificate() *schema.Resource {
@@ -48,11 +46,10 @@ func dataSourceJwksFromCertificateSchema() map[string]*schema.Schema {
 			Required:    true,
 			Description: `Requires a pem encoded certificate.`,
 		},
-		"treat_independently": {
-			Type:        schema.TypeBool,
+		"kid": {
+			Type:        schema.TypeString,
 			Optional:    true,
-			Default:     false,
-			Description: `Determines whether to generate JWK for only leaf certificate in a chain and put other certificates into x5c (default) or generate JWKs for each certificate in a chain`,
+			Description: `Used to override the kid field of the JWK.`,
 		},
 		"jwks": {
 			Type:        schema.TypeString,
@@ -65,7 +62,6 @@ func dataSourceJwksFromCertificateSchema() map[string]*schema.Schema {
 func dataSourceJwksFromCertificateRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 
 	pemString := d.Get("pem").(string)
-	treatIndependently := d.Get("treat_independently").(bool)
 
 	chain := decodePem(pemString)
 
@@ -73,14 +69,16 @@ func dataSourceJwksFromCertificateRead(_ context.Context, d *schema.ResourceData
 
 	certificates := parseChain(chain.Certificate)
 
-	if treatIndependently {
-		for _, x509Cert := range certificates {
-			keys = processCertificate(x509Cert, keys, []*x509.Certificate{x509Cert})
-		}
+	leaf := certificates[0]
+
+	var kid string
+	if k, ok := d.GetOk("kid"); ok {
+		kid = k.(string)
 	} else {
-		leaf := certificates[0]
-		keys = processCertificate(leaf, keys, certificates)
+		kid = calculateCertificateThumbprint(leaf)
 	}
+
+	keys = processCertificate(leaf, keys, certificates, kid)
 
 	jsonResult, err := json.Marshal(Keys{Keys: keys})
 
@@ -105,32 +103,39 @@ func parseChain(chain [][]byte) []*x509.Certificate {
 	return parsedCertificates
 }
 
-func processCertificate(x509Cert *x509.Certificate, keys []Key, chain []*x509.Certificate) []Key {
+func calculateCertificateThumbprint(x509Cert *x509.Certificate) string {
 	hash := sha256.New()
 	hash.Write(x509Cert.Raw)
-	kid := base64.StdEncoding.EncodeToString(hash.Sum(nil))
-	kty := x509Cert.PublicKeyAlgorithm.String()
-	pulbicKey := x509Cert.PublicKey.(*rsa.PublicKey)
+	return base64.StdEncoding.EncodeToString(hash.Sum(nil))
+}
 
-	e := strings.ReplaceAll(base64.StdEncoding.EncodeToString(big.NewInt(int64(pulbicKey.E)).Bytes()), "=", "")
-	n := strings.ReplaceAll(base64.StdEncoding.EncodeToString(pulbicKey.N.Bytes()), "=", "")
+func processCertificate(x509Cert *x509.Certificate, keys []Key, chain []*x509.Certificate, kid string) []Key {
+
+	publicKey := jwk.NewRSAPublicKey()
+	if err := publicKey.FromRaw(x509Cert.PublicKey.(*rsa.PublicKey)); err != nil {
+		diag.FromErr(err)
+	}
+
+	kty := x509Cert.PublicKeyAlgorithm.String()
+
+	e := base64.StdEncoding.EncodeToString(publicKey.E())
+	n := base64.StdEncoding.EncodeToString(publicKey.N())
 
 	x5cs := processX5c(chain)
+	x5ts256 := calculateCertificateThumbprint(x509Cert)
 
 	var subject pkix.RDNSequence
 	if _, err := asn1.Unmarshal(x509Cert.RawSubject, &subject); err != nil {
 		diag.FromErr(err)
 	}
-	x5dn := subject.String()
 
 	keys = append(keys, Key{
-		Kty:    &kty,
-		X5C:    x5cs,
-		N:      &n,
-		E:      &e,
-		Kid:    &kid,
-		X5T256: &kid,
-		X5Dn:   &x5dn,
+		Kty:     &kty,
+		X5C:     x5cs,
+		N:       &n,
+		E:       &e,
+		Kid:     &kid,
+		X5TS256: &x5ts256,
 	})
 	return keys
 }

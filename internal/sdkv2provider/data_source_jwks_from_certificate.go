@@ -2,12 +2,11 @@ package sdkv2provider
 
 import (
 	"context"
+	"crypto"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/asn1"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -17,19 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/lestrrat-go/jwx/jwk"
 )
-
-type Keys struct {
-	Keys []Key `json:"keys"`
-}
-
-type Key struct {
-	Kty     *string  `json:"kty"`
-	X5C     []string `json:"x5c"`
-	N       *string  `json:"n"`
-	E       *string  `json:"e"`
-	Kid     *string  `json:"kid"`
-	X5TS256 *string  `json:"x5t#S256"`
-}
 
 func dataSourceJwksFromCertificate() *schema.Resource {
 	return &schema.Resource{
@@ -65,8 +51,6 @@ func dataSourceJwksFromCertificateRead(_ context.Context, d *schema.ResourceData
 
 	chain := decodePem(pemString)
 
-	var keys []Key
-
 	certificates := parseChain(chain.Certificate)
 
 	leaf := certificates[0]
@@ -78,15 +62,20 @@ func dataSourceJwksFromCertificateRead(_ context.Context, d *schema.ResourceData
 		kid = calculateCertificateThumbprint(leaf)
 	}
 
-	keys = processCertificate(leaf, keys, certificates, kid)
+	key := calculateKey(leaf, certificates, kid)
 
-	jsonResult, err := json.Marshal(Keys{Keys: keys})
+	jsonResult, err := json.Marshal(key)
 
 	if err != nil {
 		diag.FromErr(err)
 	}
 
-	d.SetId(hex.EncodeToString(jsonResult))
+	tb, err := key.Thumbprint(crypto.SHA256)
+
+	if err != nil {
+		diag.FromErr(err)
+	}
+	d.SetId(hex.EncodeToString(tb))
 	return diag.FromErr(d.Set("jwks", string(jsonResult)))
 }
 
@@ -109,35 +98,27 @@ func calculateCertificateThumbprint(x509Cert *x509.Certificate) string {
 	return base64.StdEncoding.EncodeToString(hash.Sum(nil))
 }
 
-func processCertificate(x509Cert *x509.Certificate, keys []Key, chain []*x509.Certificate, kid string) []Key {
+func calculateKey(x509Cert *x509.Certificate, chain []*x509.Certificate, kid string) jwk.Key {
 
-	publicKey := jwk.NewRSAPublicKey()
-	if err := publicKey.FromRaw(x509Cert.PublicKey.(*rsa.PublicKey)); err != nil {
+	key, err := jwk.New(x509Cert.PublicKey.(*rsa.PublicKey))
+
+	if err != nil {
 		diag.FromErr(err)
 	}
 
-	kty := x509Cert.PublicKeyAlgorithm.String()
-
-	e := base64.StdEncoding.EncodeToString(publicKey.E())
-	n := base64.StdEncoding.EncodeToString(publicKey.N())
-
-	x5cs := processX5c(chain)
-	x5ts256 := calculateCertificateThumbprint(x509Cert)
-
-	var subject pkix.RDNSequence
-	if _, err := asn1.Unmarshal(x509Cert.RawSubject, &subject); err != nil {
+	if err := key.Set(jwk.X509CertChainKey, processX5c(chain)); err != nil {
 		diag.FromErr(err)
 	}
 
-	keys = append(keys, Key{
-		Kty:     &kty,
-		X5C:     x5cs,
-		N:       &n,
-		E:       &e,
-		Kid:     &kid,
-		X5TS256: &x5ts256,
-	})
-	return keys
+	if err := key.Set(jwk.X509CertThumbprintS256Key, calculateCertificateThumbprint(x509Cert)); err != nil {
+		diag.FromErr(err)
+	}
+
+	if err := key.Set(jwk.KeyIDKey, kid); err != nil {
+		diag.FromErr(err)
+	}
+
+	return key
 }
 
 func processX5c(chain []*x509.Certificate) (x5cs []string) {

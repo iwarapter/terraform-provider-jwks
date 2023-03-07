@@ -28,7 +28,7 @@ data "jwks_from_certificate" "pem_example_2" {
 
 ### Required
 
-- `pem` (String) Requires a pem encoded certificate.
+- `pem` (String) Requires a pem encoded single certificate or correctly ordered certificate chain
 
 ### Optional
 

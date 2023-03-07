@@ -30,7 +30,7 @@ func dataSourceJwksFromCertificateSchema() map[string]*schema.Schema {
 		"pem": {
 			Type:        schema.TypeString,
 			Required:    true,
-			Description: `Requires a pem encoded certificate.`,
+			Description: `Requires a pem encoded single certificate or correctly ordered certificate chain`,
 		},
 		"kid": {
 			Type:        schema.TypeString,
@@ -51,7 +51,11 @@ func dataSourceJwksFromCertificateRead(_ context.Context, d *schema.ResourceData
 
 	chain := decodePem(pemString)
 
-	certificates := parseChain(chain.Certificate)
+	certificates, err := parseChain(chain.Certificate)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	leaf := certificates[0]
 
@@ -62,34 +66,56 @@ func dataSourceJwksFromCertificateRead(_ context.Context, d *schema.ResourceData
 		kid = calculateCertificateThumbprint(leaf)
 	}
 
-	key := calculateKey(leaf, certificates, kid)
+	key, err := calculateKey(leaf, certificates, kid)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	jsonResult, err := json.Marshal(key)
 
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 
 	tb, err := key.Thumbprint(crypto.SHA256)
 
 	if err != nil {
-		diag.FromErr(err)
+		return diag.FromErr(err)
 	}
 	d.SetId(hex.EncodeToString(tb))
 	return diag.FromErr(d.Set("jwks", string(jsonResult)))
 }
 
-func parseChain(chain [][]byte) []*x509.Certificate {
+func parseChain(chain [][]byte) ([]*x509.Certificate, error) {
 	var parsedCertificates []*x509.Certificate
+	var prevCert *x509.Certificate
+	var certPool = x509.NewCertPool()
 
 	for _, cert := range chain {
 		x509Cert, err := x509.ParseCertificate(cert)
-		parsedCertificates = append(parsedCertificates, x509Cert)
+
 		if err != nil {
-			diag.FromErr(err)
+			return nil, err
 		}
+
+		if prevCert != nil {
+			if err := prevCert.CheckSignatureFrom(x509Cert); err != nil {
+				return nil, err
+			}
+		}
+		parsedCertificates = append(parsedCertificates, x509Cert)
+		certPool.AddCert(x509Cert)
+		prevCert = x509Cert
 	}
-	return parsedCertificates
+
+	if _, err := prevCert.Verify(x509.VerifyOptions{
+		Roots: certPool,
+	}); err != nil {
+		return nil, err
+	}
+
+	return parsedCertificates, nil
 }
 
 func calculateCertificateThumbprint(x509Cert *x509.Certificate) string {
@@ -98,27 +124,27 @@ func calculateCertificateThumbprint(x509Cert *x509.Certificate) string {
 	return base64.StdEncoding.EncodeToString(hash.Sum(nil))
 }
 
-func calculateKey(x509Cert *x509.Certificate, chain []*x509.Certificate, kid string) jwk.Key {
+func calculateKey(x509Cert *x509.Certificate, chain []*x509.Certificate, kid string) (jwk.Key, error) {
 
 	key, err := jwk.New(x509Cert.PublicKey.(*rsa.PublicKey))
 
 	if err != nil {
-		diag.FromErr(err)
+		return nil, err
 	}
 
 	if err := key.Set(jwk.X509CertChainKey, processX5c(chain)); err != nil {
-		diag.FromErr(err)
+		return nil, err
 	}
 
 	if err := key.Set(jwk.X509CertThumbprintS256Key, calculateCertificateThumbprint(x509Cert)); err != nil {
-		diag.FromErr(err)
+		return nil, err
 	}
 
 	if err := key.Set(jwk.KeyIDKey, kid); err != nil {
-		diag.FromErr(err)
+		return nil, err
 	}
 
-	return key
+	return key, nil
 }
 
 func processX5c(chain []*x509.Certificate) (x5cs []string) {

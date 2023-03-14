@@ -182,7 +182,7 @@ func TestAccJwksFromCertificateDataSource(t *testing.T) {
 			},
 			{
 				Config:      testAccJwksFromCertificateDataSourceConfig(WrongOrderCertificatePem),
-				ExpectError: regexp.MustCompile("crypto/rsa: verification error"),
+				ExpectError: regexp.MustCompile("unable to validate the certificate signature chain"),
 			},
 		},
 	})

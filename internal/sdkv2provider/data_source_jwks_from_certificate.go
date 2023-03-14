@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -101,7 +102,7 @@ func parseChain(chain [][]byte) ([]*x509.Certificate, error) {
 
 		if prevCert != nil {
 			if err := prevCert.CheckSignatureFrom(x509Cert); err != nil {
-				return nil, err
+				return nil, errors.New("unable to validate the certificate signature chain")
 			}
 		}
 		parsedCertificates = append(parsedCertificates, x509Cert)

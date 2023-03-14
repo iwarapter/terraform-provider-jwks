@@ -29,9 +29,10 @@ func dataSourceJwksFromCertificate() *schema.Resource {
 func dataSourceJwksFromCertificateSchema() map[string]*schema.Schema {
 	return map[string]*schema.Schema{
 		"pem": {
-			Type:        schema.TypeString,
-			Required:    true,
-			Description: `Requires a pem encoded single certificate or correctly ordered certificate chain`,
+			Type:     schema.TypeString,
+			Required: true,
+			Description: `Requires a PEM-encoded single certificate or correctly ordered certificate chain that starts with an end-entity certificate.
+							Each certificate in the chain is the certificate of the CA that issued the previous certificate.`,
 		},
 		"kid": {
 			Type:        schema.TypeString,

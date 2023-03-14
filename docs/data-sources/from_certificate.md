@@ -28,7 +28,8 @@ data "jwks_from_certificate" "pem_example_2" {
 
 ### Required
 
-- `pem` (String) Requires a pem encoded single certificate or correctly ordered certificate chain
+- `pem` (String) Requires a PEM-encoded single certificate or correctly ordered certificate chain that starts with an end-entity certificate.
+							Each certificate in the chain is the certificate of the CA that issued the previous certificate.
 
 ### Optional
 

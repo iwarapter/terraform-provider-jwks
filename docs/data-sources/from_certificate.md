@@ -33,11 +33,11 @@ data "jwks_from_certificate" "pem_example_2" {
 
 ### Optional
 
-- `id` (String) The ID of this resource.
-- `kid` (String) Used to override the kid field of the JWK.
+- `kid` (String) Used to override the kid field of the JWK
 
 ### Read-Only
 
+- `id` (String) The ID of this resource.
 - `jwks` (String) The calculated JWKS
 
 

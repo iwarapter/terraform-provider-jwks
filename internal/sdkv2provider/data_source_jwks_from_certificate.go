@@ -41,6 +41,11 @@ func dataSourceJwksFromCertificateSchema() map[string]*schema.Schema {
 			Optional:    true,
 			Description: `Used to override the kid field of the JWK`,
 		},
+		"use": {
+			Type:        schema.TypeString,
+			Optional:    true,
+			Description: `Used to populate the use field of the JWK`,
+		},
 		"jwks": {
 			Type:        schema.TypeString,
 			Computed:    true,
@@ -68,7 +73,12 @@ func dataSourceJwksFromCertificateRead(_ context.Context, d *schema.ResourceData
 		kid = calculateCertificateThumbprint(leaf)
 	}
 
-	key, err := calculateKey(leaf, certificates, kid)
+	var use string
+	if u, ok := d.GetOk("use"); ok {
+		use = u.(string)
+	}
+
+	key, err := calculateKey(leaf, certificates, kid, use)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -123,7 +133,7 @@ func calculateCertificateThumbprint(x509Cert *x509.Certificate) string {
 	return base64.StdEncoding.EncodeToString(hash.Sum(nil))
 }
 
-func calculateKey(x509Cert *x509.Certificate, chain []*x509.Certificate, kid string) (jwk.Key, error) {
+func calculateKey(x509Cert *x509.Certificate, chain []*x509.Certificate, kid, use string) (jwk.Key, error) {
 	key, err := jwk.New(x509Cert.PublicKey.(*rsa.PublicKey))
 	if err != nil {
 		return nil, err
@@ -139,6 +149,12 @@ func calculateKey(x509Cert *x509.Certificate, chain []*x509.Certificate, kid str
 
 	if err = key.Set(jwk.KeyIDKey, kid); err != nil {
 		return nil, err
+	}
+
+	if use != "" {
+		if err = key.Set(jwk.KeyUsageKey, use); err != nil {
+			return nil, err
+		}
 	}
 
 	return key, nil

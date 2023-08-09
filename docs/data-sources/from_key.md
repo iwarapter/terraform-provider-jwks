@@ -34,6 +34,7 @@ data "jwks_from_key" "base64_der_example" {
 data "jwks_from_key" "base64_der_example" {
   key = data.aws_kms_public_key.example.public_key
   kid = "123"
+  use = "sig"
 }
 ```
 
@@ -46,7 +47,8 @@ data "jwks_from_key" "base64_der_example" {
 
 ### Optional
 
-- `kid` (String) Used to populate the kid field of the JWK.
+- `kid` (String) Used to populate the `kid` field of the JWK.
+- `use` (String) Used to populate the `use` field of the JWK.
 
 ### Read-Only
 

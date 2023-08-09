@@ -21,6 +21,7 @@ data "jwks_from_certificate" "pem_example_2" {
   pem = file("${path.module}/certificate.pem")
   kid = "123"
   use = "sig"
+  alg = "RS256"
 }
 ```
 
@@ -36,6 +37,7 @@ data "jwks_from_certificate" "pem_example_2" {
 
 - `kid` (String) Used to override the `kid` field of the JWK
 - `use` (String) Used to populate the `use` field of the JWK.
+- `alg` (String) Used to populate the `alg` field of the JWK.
 
 ### Read-Only
 

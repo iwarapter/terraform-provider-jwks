@@ -36,6 +36,16 @@ func dataSourceJwksFromKeySchema() map[string]*schema.Schema {
 			Optional:    true,
 			Description: `Used to populate the kid field of the JWK.`,
 		},
+		"use": {
+			Type:        schema.TypeString,
+			Optional:    true,
+			Description: `Used to populate the use field of the JWK.`,
+		},
+		"alg": {
+			Type:        schema.TypeString,
+			Optional:    true,
+			Description: `Used to populate the alg field of the JWK.`,
+		},
 		"jwks": {
 			Type:        schema.TypeString,
 			Computed:    true,
@@ -86,6 +96,20 @@ func dataSourceJwksFromKeyRead(_ context.Context, d *schema.ResourceData, m inte
 	kid, ok := d.GetOk("kid")
 	if ok {
 		err = key.Set(jwk.KeyIDKey, kid.(string))
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+	use, ok := d.GetOk("use")
+	if ok {
+		err = key.Set(jwk.KeyUsageKey, use.(string))
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+	alg, ok := d.GetOk("alg")
+	if ok {
+		err = key.Set(jwk.AlgorithmKey, alg.(string))
 		if err != nil {
 			return diag.FromErr(err)
 		}

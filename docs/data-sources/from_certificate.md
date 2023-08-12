@@ -14,12 +14,14 @@ Calculates a JSON Web Key Set from a given certificate.
 
 ```terraform
 data "jwks_from_certificate" "pem_example" {
-  key = file("${path.module}/certificate.pem")
+  pem = file("${path.module}/certificate.pem")
 }
 
 data "jwks_from_certificate" "pem_example_2" {
-  key = file("${path.module}/certificate.pem")
+  pem = file("${path.module}/certificate.pem")
   kid = "123"
+  use = "sig"
+  alg = "RS256"
 }
 ```
 
@@ -33,7 +35,9 @@ data "jwks_from_certificate" "pem_example_2" {
 
 ### Optional
 
-- `kid` (String) Used to override the kid field of the JWK
+- `kid` (String) Used to override the `kid` field of the JWK
+- `use` (String) Used to populate the `use` field of the JWK.
+- `alg` (String) Used to populate the `alg` field of the JWK.
 
 ### Read-Only
 

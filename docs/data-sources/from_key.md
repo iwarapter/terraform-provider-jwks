@@ -48,13 +48,14 @@ data "jwks_from_key" "base64_der_example" {
 
 ### Optional
 
-- `kid` (String) Used to populate the `kid` field of the JWK.
-- `use` (String) Used to populate the `use` field of the JWK.
-- `alg` (String) Used to populate the `alg` field of the JWK.
+- `alg` (String) Used to populate the alg field of the JWK.
+- `generate_kid` (Boolean) Used to populate the kid field of the JWK with the a key ID non-reversibly from the public key (only with public keys in PEM format). See https://github.com/kubernetes/kubernetes/blob/0f140bf1eeaf63c155f5eba1db8db9b5d52d5467/pkg/serviceaccount/jwt.go#L98
+- `id` (String) The ID of this resource.
+- `kid` (String) Used to populate the kid field of the JWK.
+- `use` (String) Used to populate the use field of the JWK.
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
 - `jwks` (String) The calculated JSON Web Key Sets.
 
 

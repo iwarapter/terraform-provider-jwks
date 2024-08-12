@@ -6,14 +6,12 @@ jobs:
     name: build
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Go 1.17
-        uses: actions/setup-go@v2.1.5
-        with:
-          go-version: 1.17
-
       - name: Checkout Source
         uses: actions/checkout@v2
-
+      - name: Set up Go
+        uses: actions/setup-go@v2.1.5
+        with:
+          go-version-file: 'go.mod'
       - name: Test
         run: |
           TF_ACC=1 go test ./... -v -trimpath -coverprofile=coverage.out

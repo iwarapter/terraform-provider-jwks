@@ -3,7 +3,6 @@ package sdkv2provider
 import (
 	"context"
 	"crypto"
-	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
@@ -140,11 +139,11 @@ func parseChain(chain [][]byte) ([]*x509.Certificate, error) {
 func calculateCertificateThumbprint(x509Cert *x509.Certificate) string {
 	hash := sha256.New()
 	hash.Write(x509Cert.Raw)
-	return base64.StdEncoding.EncodeToString(hash.Sum(nil))
+	return base64.URLEncoding.EncodeToString(hash.Sum(nil))
 }
 
 func calculateKey(x509Cert *x509.Certificate, chain []*x509.Certificate, kid, use, alg string) (jwk.Key, error) {
-	key, err := jwk.New(x509Cert.PublicKey.(*rsa.PublicKey))
+	key, err := jwk.New(x509Cert.PublicKey)
 	if err != nil {
 		return nil, err
 	}

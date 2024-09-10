@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 
 	"github.com/lestrrat-go/jwx/jwk"
 
@@ -30,6 +31,12 @@ func dataSourceJwksFromKeySchema() map[string]*schema.Schema {
 			Type:        schema.TypeString,
 			Required:    true,
 			Description: `Requires either a pem encoded or base64 der encoded public or private key.`,
+		},
+		"generate_kid": {
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Description: `Used to populate the kid field of the JWK with the a key ID non-reversibly from the public key (only with public keys in PEM format). See https://github.com/kubernetes/kubernetes/blob/0f140bf1eeaf63c155f5eba1db8db9b5d52d5467/pkg/serviceaccount/jwt.go#L98`,
+			Default:     false,
 		},
 		"kid": {
 			Type:        schema.TypeString,
@@ -99,6 +106,19 @@ func dataSourceJwksFromKeyRead(_ context.Context, d *schema.ResourceData, m inte
 		if err != nil {
 			return diag.FromErr(err)
 		}
+	} else {
+		generateKid := d.Get("generate_kid").(bool)
+		if generateKid {
+			newKid, err := keyIDFromPublicKey(keyData)
+			if err != nil {
+				return diag.FromErr(err)
+			} else {
+				err = key.Set(jwk.KeyIDKey, newKid)
+				if err != nil {
+					return diag.FromErr(err)
+				}
+			}
+		}
 	}
 	use, ok := d.GetOk("use")
 	if ok {
@@ -124,4 +144,20 @@ func dataSourceJwksFromKeyRead(_ context.Context, d *schema.ResourceData, m inte
 	}
 	d.SetId(hex.EncodeToString(tb))
 	return diag.FromErr(d.Set("jwks", string(b)))
+}
+
+func keyIDFromPublicKey(publicKey interface{}) (string, error) {
+
+	publicKeyDERBytes, err := x509.MarshalPKIXPublicKey(publicKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to serialize public key to DER format: %v", err)
+	}
+
+	hasher := crypto.SHA256.New()
+	hasher.Write(publicKeyDERBytes)
+	publicKeyDERHash := hasher.Sum(nil)
+
+	keyID := base64.RawURLEncoding.EncodeToString(publicKeyDERHash)
+
+	return keyID, nil
 }

@@ -16,7 +16,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/lestrrat-go/jwx/jwk"
+	"github.com/lestrrat-go/jwx/v2/cert"
+	"github.com/lestrrat-go/jwx/v2/jwk"
 )
 
 func dataSourceJwksFromCertificate() *schema.Resource {
@@ -143,12 +144,17 @@ func calculateCertificateThumbprint(x509Cert *x509.Certificate) string {
 }
 
 func calculateKey(x509Cert *x509.Certificate, chain []*x509.Certificate, kid, use, alg string) (jwk.Key, error) {
-	key, err := jwk.New(x509Cert.PublicKey)
+	key, err := jwk.FromRaw(x509Cert.PublicKey)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = key.Set(jwk.X509CertChainKey, processX5c(chain)); err != nil {
+	x5c, err := processX5c(chain)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = key.Set(jwk.X509CertChainKey, x5c); err != nil {
 		return nil, err
 	}
 
@@ -175,11 +181,15 @@ func calculateKey(x509Cert *x509.Certificate, chain []*x509.Certificate, kid, us
 	return key, nil
 }
 
-func processX5c(chain []*x509.Certificate) (x5cs []string) {
+func processX5c(chain []*x509.Certificate) (*cert.Chain, error) {
+	x5cs := &cert.Chain{}
 	for _, x509Cert := range chain {
-		x5cs = append(x5cs, base64.StdEncoding.EncodeToString(x509Cert.Raw))
+		err := x5cs.AddString(base64.StdEncoding.EncodeToString(x509Cert.Raw))
+		if err != nil {
+			return nil, err
+		}
 	}
-	return x5cs
+	return x5cs, nil
 }
 
 func decodePem(certInput string) (*tls.Certificate, error) {

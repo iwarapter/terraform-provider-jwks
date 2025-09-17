@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 
-	"github.com/lestrrat-go/jwx/jwk"
+	"github.com/lestrrat-go/jwx/v2/jwk"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -89,7 +89,7 @@ func dataSourceJwksFromKeyRead(_ context.Context, d *schema.ResourceData, m inte
 		}
 	}
 
-	key, err := jwk.New(keyData)
+	key, err := jwk.FromRaw(keyData)
 	if err != nil {
 		return diag.FromErr(err)
 	}

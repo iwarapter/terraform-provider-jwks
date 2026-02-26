@@ -1,12 +1,11 @@
-package sdkv2provider
+package provider
 
 import (
 	"fmt"
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 const (
@@ -193,8 +192,8 @@ func TestAccJwksFromCertificateDataSource(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: testAccProviders,
-		CheckDestroy:             testAccCheckJwksFromCertificateDataSourceDestroy,
+		ProtoV6ProviderFactories: testAccProviders,
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccJwksFromCertificateDataSourceConfig(CertificatePem),
@@ -244,10 +243,6 @@ func TestAccJwksFromCertificateDataSource(t *testing.T) {
 	})
 }
 
-func testAccCheckJwksFromCertificateDataSourceDestroy(s *terraform.State) error {
-	return nil
-}
-
 func testAccJwksFromCertificateDataSourceConfig(data string) string {
 	return fmt.Sprintf(`
 data "jwks_from_certificate" "test" {
@@ -264,7 +259,7 @@ data "jwks_from_certificate" "test" {
   pem = <<EOF
 %s
 EOF
-  kid = %s
+  kid = "%s"
 }
 	`, data, kid)
 }

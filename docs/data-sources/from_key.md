@@ -48,13 +48,10 @@ data "jwks_from_key" "base64_der_example" {
 
 ### Optional
 
-- `kid` (String) Used to populate the `kid` field of the JWK.
-- `use` (String) Used to populate the `use` field of the JWK.
-- `alg` (String) Used to populate the `alg` field of the JWK.
+- `alg` (String) Used to populate the alg field of the JWK.
+- `kid` (String) Used to populate the kid field of the JWK.
+- `use` (String) Used to populate the use field of the JWK.
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
 - `jwks` (String) The calculated JSON Web Key Sets.
-
-

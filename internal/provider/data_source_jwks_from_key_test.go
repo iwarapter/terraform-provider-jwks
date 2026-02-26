@@ -1,4 +1,4 @@
-package sdkv2provider
+package provider
 
 import (
 	"encoding/base64"
@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 const (
@@ -73,8 +72,8 @@ func TestAccJwksFromKeyDataSource(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: testAccProviders,
-		CheckDestroy:             testAccCheckJwksFromKeyDataSourceDestroy,
+		ProtoV6ProviderFactories: testAccProviders,
+
 		Steps: []resource.TestStep{
 			{
 				Config: testAccJwksFromKeyDataSourceConfig(PrivateKey),
@@ -153,10 +152,6 @@ func TestAccJwksFromKeyDataSource(t *testing.T) {
 	})
 }
 
-func testAccCheckJwksFromKeyDataSourceDestroy(s *terraform.State) error {
-	return nil
-}
-
 func testAccJwksFromKeyDataSourceConfig(data string) string {
 	return fmt.Sprintf(`
 data "jwks_from_key" "test" {
@@ -173,7 +168,7 @@ func testAccJwksFromKeyWithKidDataSourceConfig(data, kid string) string {
 		key = <<EOF
 %s
 EOF
-		kid = %s
+		kid = "%s"
 	}
 	`, data, kid)
 }

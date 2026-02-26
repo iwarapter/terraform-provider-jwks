@@ -1,216 +1,208 @@
-package provider
+package provider_test
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/pem"
-	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-)
-
-const (
-	PrivateKey = `
------BEGIN RSA PRIVATE KEY-----
-MIIEowIBAAKCAQEAgUElV5mwqkloIrM8ZNZ72gSCcnSJt7+/Usa5G+D15YQUAdf9
-c1zEekTfHgDP+04nw/uFNFaE5v1RbHaPxhZYVg5ZErNCa/hzn+x10xzcepeS3KPV
-Xcxae4MR0BEegvqZqJzN9loXsNL/c3H/B+2Gle3hTxjlWFb3F5qLgR+4Mf4ruhER
-1v6eHQa/nchi03MBpT4UeJ7MrL92hTJYLdpSyCqmr8yjxkKJDVC2uRrr+sTSxfh7
-r6v24u/vp/QTmBIAlNPgadVAZw17iNNb7vjV7Gwl/5gHXonCUKURaV++dBNLrHIZ
-pqcAM8wHRph8mD1EfL9hsz77pHewxolBATV+7QIDAQABAoIBAC1rK+kFW3vrAYm3
-+8/fQnQQw5nec4o6+crng6JVQXLeH32qXShNf8kLLG/Jj0vaYcTPPDZw9JCKkTMQ
-0mKj9XR/5DLbBMsV6eNXXuvJJ3x4iKW5eD9WkLD4FKlNarBRyO7j8sfPTqXW7uat
-NxWdFH7YsSRvNh/9pyQHLWA5OituidMrYbc3EUx8B1GPNyJ9W8Q8znNYLfwYOjU4
-Wv1SLE6qGQQH9Q0WzA2WUf8jklCYyMYTIywAjGb8kbAJlKhmj2t2Igjmqtwt1PYc
-pGlqbtQBDUiWXt5S4YX/1maIQ/49yeNUajjpbJiH3DbhJbHwFTzP3pZ9P9GHOzlG
-kYR+wSECgYEAw/Xida8kSv8n86V3qSY/I+fYQ5V+jDtXIE+JhRnS8xzbOzz3v0WS
-Oo5H+o4nJx5eL3Ghb3Gcm0Jn46dHrxinHbm+3RjXv/X6tlbxIYjRSQfHOTSMCTvd
-qcliF5vC6RCLXuc7R+IWR1Ky6eDEZGtrvt3DyeYABsp9fRUFR/6NluUCgYEAqNsw
-1aSl7WJa27F0DoJdlU9LWerpXcazlJcIdOz/S9QDmSK3RDQTdqfTxRmrxiYI9LEs
-mkOkvzlnnOBMpnZ3ZOU5qIRfprecRIi37KDAOHWGnlC0EWGgl46YLb7/jXiWf0AG
-Y+DfJJNd9i6TbIDWu8254/erAS6bKMhW/3q7f2kCgYAZ7Id/BiKJAWRpqTRBXlvw
-BhXoKvjI2HjYP21z/EyZ+PFPzur/lNaZhIUlMnUfibbwE9pFggQzzf8scM7c7Sf+
-mLoVSdoQ/Rujz7CqvQzi2nKSsM7t0curUIb3lJWee5/UeEaxZcmIufoNUrzohAWH
-BJOIPDM4ssUTLRq7wYM9uQKBgHCBau5OP8gE6mjKuXsZXWUoahpFLKwwwmJUp2vQ
-pOFPJ/6WZOlqkTVT6QPAcPUbTohKrF80hsZqZyDdSfT3peFx4ZLocBrS56m6NmHR
-UYHMvJ8rQm76T1fryHVidz85g3zRmfBeWg8yqT5oFg4LYgfLsPm1gRjOhs8LfPvI
-OLlRAoGBAIZ5Uv4Z3s8O7WKXXUe/lq6j7vfiVkR1NW/Z/WLKXZpnmvJ7FgxN4e56
-RXT7GwNQHIY8eDjDnsHxzrxd+raOxOZeKcMHj3XyjCX3NHfTscnsBPAGYpY/Wxzh
-T8UYnFu6RzkixElTf2rseEav7rkdKkI3LAeIZy7B0HulKKsmqVQ7
------END RSA PRIVATE KEY-----
-`
-
-	PublicKey = `
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAgUElV5mwqkloIrM8ZNZ7
-2gSCcnSJt7+/Usa5G+D15YQUAdf9c1zEekTfHgDP+04nw/uFNFaE5v1RbHaPxhZY
-Vg5ZErNCa/hzn+x10xzcepeS3KPVXcxae4MR0BEegvqZqJzN9loXsNL/c3H/B+2G
-le3hTxjlWFb3F5qLgR+4Mf4ruhER1v6eHQa/nchi03MBpT4UeJ7MrL92hTJYLdpS
-yCqmr8yjxkKJDVC2uRrr+sTSxfh7r6v24u/vp/QTmBIAlNPgadVAZw17iNNb7vjV
-7Gwl/5gHXonCUKURaV++dBNLrHIZpqcAM8wHRph8mD1EfL9hsz77pHewxolBATV+
-7QIDAQAB
------END PUBLIC KEY-----
-`
-	ECPrivateKey = `
------BEGIN EC PRIVATE KEY-----
-MIGkAgEBBDBYv+Kxcvmf1THbJ3amFFEwf9o8JnBV+CFQSERT0XQvQQqiLswPShGK
-uWypa5iw3B2gBwYFK4EEACKhZANiAARCdKoVsoZ0SLP+DQKhkVcEC+wwxswGqqdn
-eMn/OsvG4FKENOauxGhTswI4Atu3Th8WhEjwfTppLVarVewBsyIwtSqmXmOg5Z5Q
-KHHI9vS/7sHzogT3b31QcGlsB9ye2F0=
------END EC PRIVATE KEY-----`
-
-	ECPublicKey = `
------BEGIN PUBLIC KEY-----
-MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEQnSqFbKGdEiz/g0CoZFXBAvsMMbMBqqn
-Z3jJ/zrLxuBShDTmrsRoU7MCOALbt04fFoRI8H06aS1Wq1XsAbMiMLUqpl5joOWe
-UChxyPb0v+7B86IE9299UHBpbAfcnthd
------END PUBLIC KEY-----`
+	"github.com/iwarapter/terraform-provider-jwks/internal/provider"
+	"github.com/lestrrat-go/jwx/v3/jwk"
 )
 
 func TestAccJwksFromKeyDataSource(t *testing.T) {
 	resourceName := "data.jwks_from_key.test"
 
+	rsaPrivatePEM, rsaPublicPEM := testRSAPEMFixtures(t)
+	ecPrivatePEM, ecPublicPEM := testECP384PEMFixtures(t)
+
+	rsaPrivateDER := testDERBase64FromPEM(t, rsaPrivatePEM)
+	rsaPublicDER := testDERBase64FromPEM(t, rsaPublicPEM)
+	ecPrivateDER := testDERBase64FromPEM(t, ecPrivatePEM)
+	ecPublicDER := testDERBase64FromPEM(t, ecPublicPEM)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProviders,
-
 		Steps: []resource.TestStep{
 			{
-				Config: testAccJwksFromKeyDataSourceConfig(PrivateKey),
+				Config: testAccDataSourceConfig("jwks_from_key", "key", rsaPrivatePEM, "", "", ""),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "jwks", `{"d":"LWsr6QVbe-sBibf7z99CdBDDmd5zijr5yueDolVBct4ffapdKE1_yQssb8mPS9phxM88NnD0kIqRMxDSYqP1dH_kMtsEyxXp41de68knfHiIpbl4P1aQsPgUqU1qsFHI7uPyx89Opdbu5q03FZ0UftixJG82H_2nJActYDk6K26J0ythtzcRTHwHUY83In1bxDzOc1gt_Bg6NTha_VIsTqoZBAf1DRbMDZZR_yOSUJjIxhMjLACMZvyRsAmUqGaPa3YiCOaq3C3U9hykaWpu1AENSJZe3lLhhf_WZohD_j3J41RqOOlsmIfcNuElsfAVPM_eln0_0Yc7OUaRhH7BIQ","dp":"GeyHfwYiiQFkaak0QV5b8AYV6Cr4yNh42D9tc_xMmfjxT87q_5TWmYSFJTJ1H4m28BPaRYIEM83_LHDO3O0n_pi6FUnaEP0bo8-wqr0M4tpykrDO7dHLq1CG95SVnnuf1HhGsWXJiLn6DVK86IQFhwSTiDwzOLLFEy0au8GDPbk","dq":"cIFq7k4_yATqaMq5exldZShqGkUsrDDCYlSna9Ck4U8n_pZk6WqRNVPpA8Bw9RtOiEqsXzSGxmpnIN1J9Pel4XHhkuhwGtLnqbo2YdFRgcy8nytCbvpPV-vIdWJ3PzmDfNGZ8F5aDzKpPmgWDgtiB8uw-bWBGM6Gzwt8-8g4uVE","e":"AQAB","kty":"RSA","n":"gUElV5mwqkloIrM8ZNZ72gSCcnSJt7-_Usa5G-D15YQUAdf9c1zEekTfHgDP-04nw_uFNFaE5v1RbHaPxhZYVg5ZErNCa_hzn-x10xzcepeS3KPVXcxae4MR0BEegvqZqJzN9loXsNL_c3H_B-2Gle3hTxjlWFb3F5qLgR-4Mf4ruhER1v6eHQa_nchi03MBpT4UeJ7MrL92hTJYLdpSyCqmr8yjxkKJDVC2uRrr-sTSxfh7r6v24u_vp_QTmBIAlNPgadVAZw17iNNb7vjV7Gwl_5gHXonCUKURaV--dBNLrHIZpqcAM8wHRph8mD1EfL9hsz77pHewxolBATV-7Q","p":"w_Xida8kSv8n86V3qSY_I-fYQ5V-jDtXIE-JhRnS8xzbOzz3v0WSOo5H-o4nJx5eL3Ghb3Gcm0Jn46dHrxinHbm-3RjXv_X6tlbxIYjRSQfHOTSMCTvdqcliF5vC6RCLXuc7R-IWR1Ky6eDEZGtrvt3DyeYABsp9fRUFR_6NluU","q":"qNsw1aSl7WJa27F0DoJdlU9LWerpXcazlJcIdOz_S9QDmSK3RDQTdqfTxRmrxiYI9LEsmkOkvzlnnOBMpnZ3ZOU5qIRfprecRIi37KDAOHWGnlC0EWGgl46YLb7_jXiWf0AGY-DfJJNd9i6TbIDWu8254_erAS6bKMhW_3q7f2k","qi":"hnlS_hnezw7tYpddR7-WrqPu9-JWRHU1b9n9Yspdmmea8nsWDE3h7npFdPsbA1Achjx4OMOewfHOvF36to7E5l4pwwePdfKMJfc0d9OxyewE8AZilj9bHOFPxRicW7pHOSLESVN_aux4Rq_uuR0qQjcsB4hnLsHQe6UoqyapVDs"}`),
+					resource.TestCheckResourceAttr(resourceName, "jwks", expectedJWKSFromKey(t, rsaPrivatePEM, "", "", "")),
 				),
 			},
 			{
-				Config: testAccJwksFromKeyDataSourceConfig(PublicKey),
+				Config: testAccDataSourceConfig("jwks_from_key", "key", rsaPublicPEM, "", "", ""),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "jwks", `{"e":"AQAB","kty":"RSA","n":"gUElV5mwqkloIrM8ZNZ72gSCcnSJt7-_Usa5G-D15YQUAdf9c1zEekTfHgDP-04nw_uFNFaE5v1RbHaPxhZYVg5ZErNCa_hzn-x10xzcepeS3KPVXcxae4MR0BEegvqZqJzN9loXsNL_c3H_B-2Gle3hTxjlWFb3F5qLgR-4Mf4ruhER1v6eHQa_nchi03MBpT4UeJ7MrL92hTJYLdpSyCqmr8yjxkKJDVC2uRrr-sTSxfh7r6v24u_vp_QTmBIAlNPgadVAZw17iNNb7vjV7Gwl_5gHXonCUKURaV--dBNLrHIZpqcAM8wHRph8mD1EfL9hsz77pHewxolBATV-7Q"}`),
+					resource.TestCheckResourceAttr(resourceName, "jwks", expectedJWKSFromKey(t, rsaPublicPEM, "", "", "")),
 				),
 			},
 			{
-				Config: testAccJwksFromKeyDataSourceConfig(ECPrivateKey),
+				Config: testAccDataSourceConfig("jwks_from_key", "key", ecPrivatePEM, "", "", ""),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "jwks", `{"crv":"P-384","d":"WL_isXL5n9Ux2yd2phRRMH_aPCZwVfghUEhEU9F0L0EKoi7MD0oRirlsqWuYsNwd","kty":"EC","x":"QnSqFbKGdEiz_g0CoZFXBAvsMMbMBqqnZ3jJ_zrLxuBShDTmrsRoU7MCOALbt04f","y":"FoRI8H06aS1Wq1XsAbMiMLUqpl5joOWeUChxyPb0v-7B86IE9299UHBpbAfcnthd"}`),
+					resource.TestCheckResourceAttr(resourceName, "jwks", expectedJWKSFromKey(t, ecPrivatePEM, "", "", "")),
 				),
 			},
 			{
-				Config: testAccJwksFromKeyDataSourceConfig(ECPublicKey),
+				Config: testAccDataSourceConfig("jwks_from_key", "key", ecPublicPEM, "", "", ""),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "jwks", `{"crv":"P-384","kty":"EC","x":"QnSqFbKGdEiz_g0CoZFXBAvsMMbMBqqnZ3jJ_zrLxuBShDTmrsRoU7MCOALbt04f","y":"FoRI8H06aS1Wq1XsAbMiMLUqpl5joOWeUChxyPb0v-7B86IE9299UHBpbAfcnthd"}`),
-				),
-			},
-
-			{
-				Config: testAccJwksFromKeyDataSourceConfig(privateKeyDer()),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "jwks", `{"d":"LWsr6QVbe-sBibf7z99CdBDDmd5zijr5yueDolVBct4ffapdKE1_yQssb8mPS9phxM88NnD0kIqRMxDSYqP1dH_kMtsEyxXp41de68knfHiIpbl4P1aQsPgUqU1qsFHI7uPyx89Opdbu5q03FZ0UftixJG82H_2nJActYDk6K26J0ythtzcRTHwHUY83In1bxDzOc1gt_Bg6NTha_VIsTqoZBAf1DRbMDZZR_yOSUJjIxhMjLACMZvyRsAmUqGaPa3YiCOaq3C3U9hykaWpu1AENSJZe3lLhhf_WZohD_j3J41RqOOlsmIfcNuElsfAVPM_eln0_0Yc7OUaRhH7BIQ","dp":"GeyHfwYiiQFkaak0QV5b8AYV6Cr4yNh42D9tc_xMmfjxT87q_5TWmYSFJTJ1H4m28BPaRYIEM83_LHDO3O0n_pi6FUnaEP0bo8-wqr0M4tpykrDO7dHLq1CG95SVnnuf1HhGsWXJiLn6DVK86IQFhwSTiDwzOLLFEy0au8GDPbk","dq":"cIFq7k4_yATqaMq5exldZShqGkUsrDDCYlSna9Ck4U8n_pZk6WqRNVPpA8Bw9RtOiEqsXzSGxmpnIN1J9Pel4XHhkuhwGtLnqbo2YdFRgcy8nytCbvpPV-vIdWJ3PzmDfNGZ8F5aDzKpPmgWDgtiB8uw-bWBGM6Gzwt8-8g4uVE","e":"AQAB","kty":"RSA","n":"gUElV5mwqkloIrM8ZNZ72gSCcnSJt7-_Usa5G-D15YQUAdf9c1zEekTfHgDP-04nw_uFNFaE5v1RbHaPxhZYVg5ZErNCa_hzn-x10xzcepeS3KPVXcxae4MR0BEegvqZqJzN9loXsNL_c3H_B-2Gle3hTxjlWFb3F5qLgR-4Mf4ruhER1v6eHQa_nchi03MBpT4UeJ7MrL92hTJYLdpSyCqmr8yjxkKJDVC2uRrr-sTSxfh7r6v24u_vp_QTmBIAlNPgadVAZw17iNNb7vjV7Gwl_5gHXonCUKURaV--dBNLrHIZpqcAM8wHRph8mD1EfL9hsz77pHewxolBATV-7Q","p":"w_Xida8kSv8n86V3qSY_I-fYQ5V-jDtXIE-JhRnS8xzbOzz3v0WSOo5H-o4nJx5eL3Ghb3Gcm0Jn46dHrxinHbm-3RjXv_X6tlbxIYjRSQfHOTSMCTvdqcliF5vC6RCLXuc7R-IWR1Ky6eDEZGtrvt3DyeYABsp9fRUFR_6NluU","q":"qNsw1aSl7WJa27F0DoJdlU9LWerpXcazlJcIdOz_S9QDmSK3RDQTdqfTxRmrxiYI9LEsmkOkvzlnnOBMpnZ3ZOU5qIRfprecRIi37KDAOHWGnlC0EWGgl46YLb7_jXiWf0AGY-DfJJNd9i6TbIDWu8254_erAS6bKMhW_3q7f2k","qi":"hnlS_hnezw7tYpddR7-WrqPu9-JWRHU1b9n9Yspdmmea8nsWDE3h7npFdPsbA1Achjx4OMOewfHOvF36to7E5l4pwwePdfKMJfc0d9OxyewE8AZilj9bHOFPxRicW7pHOSLESVN_aux4Rq_uuR0qQjcsB4hnLsHQe6UoqyapVDs"}`),
+					resource.TestCheckResourceAttr(resourceName, "jwks", expectedJWKSFromKey(t, ecPublicPEM, "", "", "")),
 				),
 			},
 			{
-				Config: testAccJwksFromKeyDataSourceConfig(publicKeyDer()),
+				Config: testAccDataSourceConfig("jwks_from_key", "key", rsaPrivateDER, "", "", ""),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "jwks", `{"e":"AQAB","kty":"RSA","n":"gUElV5mwqkloIrM8ZNZ72gSCcnSJt7-_Usa5G-D15YQUAdf9c1zEekTfHgDP-04nw_uFNFaE5v1RbHaPxhZYVg5ZErNCa_hzn-x10xzcepeS3KPVXcxae4MR0BEegvqZqJzN9loXsNL_c3H_B-2Gle3hTxjlWFb3F5qLgR-4Mf4ruhER1v6eHQa_nchi03MBpT4UeJ7MrL92hTJYLdpSyCqmr8yjxkKJDVC2uRrr-sTSxfh7r6v24u_vp_QTmBIAlNPgadVAZw17iNNb7vjV7Gwl_5gHXonCUKURaV--dBNLrHIZpqcAM8wHRph8mD1EfL9hsz77pHewxolBATV-7Q"}`),
+					resource.TestCheckResourceAttr(resourceName, "jwks", expectedJWKSFromKey(t, rsaPrivateDER, "", "", "")),
 				),
 			},
 			{
-				Config: testAccJwksFromKeyDataSourceConfig(ecPrivateKeyDer()),
+				Config: testAccDataSourceConfig("jwks_from_key", "key", rsaPublicDER, "", "", ""),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "jwks", `{"crv":"P-384","d":"WL_isXL5n9Ux2yd2phRRMH_aPCZwVfghUEhEU9F0L0EKoi7MD0oRirlsqWuYsNwd","kty":"EC","x":"QnSqFbKGdEiz_g0CoZFXBAvsMMbMBqqnZ3jJ_zrLxuBShDTmrsRoU7MCOALbt04f","y":"FoRI8H06aS1Wq1XsAbMiMLUqpl5joOWeUChxyPb0v-7B86IE9299UHBpbAfcnthd"}`),
+					resource.TestCheckResourceAttr(resourceName, "jwks", expectedJWKSFromKey(t, rsaPublicDER, "", "", "")),
 				),
 			},
 			{
-				Config: testAccJwksFromKeyDataSourceConfig(ecPublicKeyDer()),
+				Config: testAccDataSourceConfig("jwks_from_key", "key", ecPrivateDER, "", "", ""),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "jwks", `{"crv":"P-384","kty":"EC","x":"QnSqFbKGdEiz_g0CoZFXBAvsMMbMBqqnZ3jJ_zrLxuBShDTmrsRoU7MCOALbt04f","y":"FoRI8H06aS1Wq1XsAbMiMLUqpl5joOWeUChxyPb0v-7B86IE9299UHBpbAfcnthd"}`),
+					resource.TestCheckResourceAttr(resourceName, "jwks", expectedJWKSFromKey(t, ecPrivateDER, "", "", "")),
 				),
 			},
 			{
-				Config: testAccJwksFromKeyWithKidDataSourceConfig(ecPrivateKeyDer(), "123"),
+				Config: testAccDataSourceConfig("jwks_from_key", "key", ecPublicDER, "", "", ""),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "jwks", `{"crv":"P-384","d":"WL_isXL5n9Ux2yd2phRRMH_aPCZwVfghUEhEU9F0L0EKoi7MD0oRirlsqWuYsNwd","kid":"123","kty":"EC","x":"QnSqFbKGdEiz_g0CoZFXBAvsMMbMBqqnZ3jJ_zrLxuBShDTmrsRoU7MCOALbt04f","y":"FoRI8H06aS1Wq1XsAbMiMLUqpl5joOWeUChxyPb0v-7B86IE9299UHBpbAfcnthd"}`),
+					resource.TestCheckResourceAttr(resourceName, "jwks", expectedJWKSFromKey(t, ecPublicDER, "", "", "")),
 				),
 			},
 			{
-				Config: testAccJwksFromKeyWithKidDataSourceConfig(ecPublicKeyDer(), "123"),
+				Config: testAccDataSourceConfig("jwks_from_key", "key", ecPrivateDER, "123", "", ""),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "jwks", `{"crv":"P-384","kid":"123","kty":"EC","x":"QnSqFbKGdEiz_g0CoZFXBAvsMMbMBqqnZ3jJ_zrLxuBShDTmrsRoU7MCOALbt04f","y":"FoRI8H06aS1Wq1XsAbMiMLUqpl5joOWeUChxyPb0v-7B86IE9299UHBpbAfcnthd"}`),
+					resource.TestCheckResourceAttr(resourceName, "jwks", expectedJWKSFromKey(t, ecPrivateDER, "123", "", "")),
 				),
 			},
 			{
-				Config: testAccJwksFromKeyWithUseDataSourceConfig(PublicKey, "sig"),
+				Config: testAccDataSourceConfig("jwks_from_key", "key", ecPublicDER, "123", "", ""),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "jwks", `{"e":"AQAB","kty":"RSA","n":"gUElV5mwqkloIrM8ZNZ72gSCcnSJt7-_Usa5G-D15YQUAdf9c1zEekTfHgDP-04nw_uFNFaE5v1RbHaPxhZYVg5ZErNCa_hzn-x10xzcepeS3KPVXcxae4MR0BEegvqZqJzN9loXsNL_c3H_B-2Gle3hTxjlWFb3F5qLgR-4Mf4ruhER1v6eHQa_nchi03MBpT4UeJ7MrL92hTJYLdpSyCqmr8yjxkKJDVC2uRrr-sTSxfh7r6v24u_vp_QTmBIAlNPgadVAZw17iNNb7vjV7Gwl_5gHXonCUKURaV--dBNLrHIZpqcAM8wHRph8mD1EfL9hsz77pHewxolBATV-7Q","use":"sig"}`),
+					resource.TestCheckResourceAttr(resourceName, "jwks", expectedJWKSFromKey(t, ecPublicDER, "123", "", "")),
 				),
 			},
 			{
-				Config: testAccJwksFromKeyWithAlgDataSourceConfig(PublicKey, "RS256"),
+				Config: testAccDataSourceConfig("jwks_from_key", "key", rsaPublicPEM, "", "sig", ""),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "jwks", `{"alg":"RS256","e":"AQAB","kty":"RSA","n":"gUElV5mwqkloIrM8ZNZ72gSCcnSJt7-_Usa5G-D15YQUAdf9c1zEekTfHgDP-04nw_uFNFaE5v1RbHaPxhZYVg5ZErNCa_hzn-x10xzcepeS3KPVXcxae4MR0BEegvqZqJzN9loXsNL_c3H_B-2Gle3hTxjlWFb3F5qLgR-4Mf4ruhER1v6eHQa_nchi03MBpT4UeJ7MrL92hTJYLdpSyCqmr8yjxkKJDVC2uRrr-sTSxfh7r6v24u_vp_QTmBIAlNPgadVAZw17iNNb7vjV7Gwl_5gHXonCUKURaV--dBNLrHIZpqcAM8wHRph8mD1EfL9hsz77pHewxolBATV-7Q"}`),
+					resource.TestCheckResourceAttr(resourceName, "jwks", expectedJWKSFromKey(t, rsaPublicPEM, "", "sig", "")),
+				),
+			},
+			{
+				Config: testAccDataSourceConfig("jwks_from_key", "key", rsaPublicPEM, "", "", "RS256"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "jwks", expectedJWKSFromKey(t, rsaPublicPEM, "", "", "RS256")),
 				),
 			},
 		},
 	})
 }
 
-func testAccJwksFromKeyDataSourceConfig(data string) string {
-	return fmt.Sprintf(`
-data "jwks_from_key" "test" {
-  key = <<EOF
-%s
-EOF
-}
-	`, data)
-}
+func expectedJWKSFromKey(t *testing.T, keyInput, kid, use, alg string) string {
+	t.Helper()
 
-func testAccJwksFromKeyWithKidDataSourceConfig(data, kid string) string {
-	return fmt.Sprintf(`
-	data "jwks_from_key" "test" {
-		key = <<EOF
-%s
-EOF
-		kid = "%s"
+	keyData, err := provider.ParseRawKey(keyInput)
+	if err != nil {
+		t.Fatalf("failed to parse expected key fixture: %v", err)
 	}
-	`, data, kid)
-}
 
-func testAccJwksFromKeyWithUseDataSourceConfig(data, use string) string {
-	return fmt.Sprintf(`
-	data "jwks_from_key" "test" {
-		key = <<EOF
-%s
-EOF
-		use = "%s"
+	key, err := jwk.Import(keyData)
+	if err != nil {
+		t.Fatalf("failed to import expected key fixture: %v", err)
 	}
-	`, data, use)
-}
 
-func testAccJwksFromKeyWithAlgDataSourceConfig(data, alg string) string {
-	return fmt.Sprintf(`
-	data "jwks_from_key" "test" {
-		key = <<EOF
-%s
-EOF
-		alg = "%s"
+	if kid != "" {
+		if err = key.Set(jwk.KeyIDKey, kid); err != nil {
+			t.Fatalf("failed to set expected kid: %v", err)
+		}
 	}
-	`, data, alg)
+
+	if use != "" {
+		if err = key.Set(jwk.KeyUsageKey, use); err != nil {
+			t.Fatalf("failed to set expected use: %v", err)
+		}
+	}
+
+	if alg != "" {
+		if err = key.Set(jwk.AlgorithmKey, alg); err != nil {
+			t.Fatalf("failed to set expected alg: %v", err)
+		}
+	}
+
+	b, err := json.Marshal(key)
+	if err != nil {
+		t.Fatalf("failed to marshal expected key fixture: %v", err)
+	}
+
+	return string(b)
 }
 
-func privateKeyDer() string {
-	block, _ := pem.Decode([]byte(PrivateKey))
-	return base64.StdEncoding.EncodeToString(block.Bytes)
+func testRSAPEMFixtures(t *testing.T) (string, string) {
+	t.Helper()
+
+	_, privatePEM, err := acctest.RandSSHKeyPair("terraform-provider-jwks")
+	if err != nil {
+		t.Fatalf("failed to generate RSA fixture with acctest: %v", err)
+	}
+
+	block, _ := pem.Decode([]byte(privatePEM))
+	if block == nil {
+		t.Fatalf("failed to decode RSA private fixture PEM")
+	}
+
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		t.Fatalf("failed to parse RSA private fixture key: %v", err)
+	}
+
+	publicDER, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		t.Fatalf("failed to marshal RSA public fixture key: %v", err)
+	}
+
+	publicPEM := string(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: publicDER}))
+	return privatePEM, publicPEM
 }
 
-func publicKeyDer() string {
-	block, _ := pem.Decode([]byte(PublicKey))
-	return base64.StdEncoding.EncodeToString(block.Bytes)
+func testECP384PEMFixtures(t *testing.T) (string, string) {
+	t.Helper()
+
+	privateKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	if err != nil {
+		t.Fatalf("failed to generate EC private fixture key: %v", err)
+	}
+
+	privateDER, err := x509.MarshalECPrivateKey(privateKey)
+	if err != nil {
+		t.Fatalf("failed to marshal EC private fixture key: %v", err)
+	}
+
+	publicDER, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		t.Fatalf("failed to marshal EC public fixture key: %v", err)
+	}
+
+	privatePEM := string(pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: privateDER}))
+	publicPEM := string(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: publicDER}))
+	return privatePEM, publicPEM
 }
 
-func ecPrivateKeyDer() string {
-	block, _ := pem.Decode([]byte(ECPrivateKey))
-	return base64.StdEncoding.EncodeToString(block.Bytes)
-}
+func testDERBase64FromPEM(t *testing.T, pemData string) string {
+	t.Helper()
 
-func ecPublicKeyDer() string {
-	block, _ := pem.Decode([]byte(ECPublicKey))
+	block, _ := pem.Decode([]byte(pemData))
+	if block == nil {
+		t.Fatalf("failed to decode PEM fixture into DER")
+	}
+
 	return base64.StdEncoding.EncodeToString(block.Bytes)
 }

@@ -69,7 +69,7 @@ func (d *jwksFromKeyDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	keyData, err := parseRawKey(state.Key.ValueString())
+	keyData, err := ParseRawKey(state.Key.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Unable to parse key", err.Error())
 		return
@@ -113,7 +113,7 @@ func (d *jwksFromKeyDataSource) Read(ctx context.Context, req datasource.ReadReq
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func parseRawKey(data string) (any, error) {
+func ParseRawKey(data string) (any, error) {
 	dataBytes := []byte(data)
 	b64data, err := base64.StdEncoding.DecodeString(data)
 	if err == nil {

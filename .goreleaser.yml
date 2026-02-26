@@ -1,6 +1,11 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+---
+version: 2
+
 before:
   hooks:
-    - go mod tidy
+    - go mod download
+
 builds:
   - env:
       - CGO_ENABLED=0
@@ -12,35 +17,50 @@ builds:
       - darwin
     goarch:
       - amd64
-      - '386'
+      - "386"
       - arm
       - arm64
     ignore:
       - goos: darwin
-        goarch: '386'
+        goarch: "386"
       - goos: openbsd
         goarch: arm
       - goos: openbsd
         goarch: arm64
-    binary: '{{ .ProjectName }}_v{{ .Version }}'
-    flags: |
-      -gcflags="-trimpath=$GOPATH" -asmflags="-trimpath=$GOPATH"
+    binary: "{{ .ProjectName }}_v{{ .Version }}"
+    flags:
+      - '-gcflags=-trimpath=$GOPATH'
+      - '-asmflags=-trimpath=$GOPATH'
+    ldflags:
+      - "-s -w -X main.version={{ .Version }}"
+
 archives:
   - format: zip
-    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
 checksum:
-  name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
   algorithm: sha256
+  name_template: "{{ .ProjectName }}_{{ .Version }}_SHA256SUMS"
+  extra_files:
+    - glob: terraform-registry-manifest.json
+      name_template: "{{ .ProjectName }}_{{ .Version }}_manifest.json"
+
 signs:
   - artifacts: checksum
     args:
+      - "--batch"
       - "--local-user"
-      - "BE9710A9C84DA5AA" # Replace this with your GPG signing key ID
+      - "{{ .Env.GPG_FINGERPRINT }}" # set this environment variable for your signing key
       - "--output"
       - "${signature}"
       - "--detach-sign"
       - "${artifact}"
+
 release:
   draft: true
+  extra_files:
+    - glob: terraform-registry-manifest.json
+      name_template: "{{ .ProjectName }}_{{ .Version }}_manifest.json"
+
 changelog:
-  skip: true
+  disable: true

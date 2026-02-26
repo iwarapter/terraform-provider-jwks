@@ -30,18 +30,14 @@ data "jwks_from_certificate" "pem_example_2" {
 
 ### Required
 
-- `pem` (String) Requires a PEM-encoded single certificate or correctly ordered certificate chain that starts with an end-entity certificate.
-							Each certificate in the chain is the certificate of the CA that issued the previous certificate.
+- `pem` (String) Requires a PEM-encoded single certificate or correctly ordered certificate chain that starts with an end-entity certificate. Each certificate in the chain is the certificate of the CA that issued the previous certificate.
 
 ### Optional
 
-- `kid` (String) Used to override the `kid` field of the JWK
-- `use` (String) Used to populate the `use` field of the JWK.
-- `alg` (String) Used to populate the `alg` field of the JWK.
+- `alg` (String) Used to populate the alg field of the JWK
+- `kid` (String) Used to override the kid field of the JWK
+- `use` (String) Used to populate the use field of the JWK
 
 ### Read-Only
 
-- `id` (String) The ID of this resource.
 - `jwks` (String) The calculated JWKS
-
-

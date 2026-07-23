@@ -22,3 +22,8 @@ data "jwks_from_key" "base64_der_example" {
   use = "sig"
   alg = "RS256"
 }
+
+# ML-DSA (FIPS 204) public key from AWS KMS, emitted as an RFC 9964 AKP JWK.
+data "jwks_from_key" "mldsa_example" {
+  key = data.aws_kms_public_key.mldsa_example.public_key
+}

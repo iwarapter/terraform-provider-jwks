@@ -20,7 +20,7 @@ func dataSourceJwksFromKey() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceJwksFromKeyRead,
 		Schema:      dataSourceJwksFromKeySchema(),
-		Description: `Calculates a JSON Web Key Set from a given public or private key.`,
+		Description: `Calculates a JSON Web Key Set from a given public or private key. RSA and EC keys are emitted as RFC 7517 JWKs; ML-DSA (FIPS 204) public keys are emitted as RFC 9964 AKP JWKs.`,
 	}
 }
 
@@ -29,7 +29,7 @@ func dataSourceJwksFromKeySchema() map[string]*schema.Schema {
 		"key": {
 			Type:        schema.TypeString,
 			Required:    true,
-			Description: `Requires either a pem encoded or base64 der encoded public or private key.`,
+			Description: `Requires either a pem encoded or base64 der encoded public or private key. RSA, EC and ML-DSA (ML-DSA-44, ML-DSA-65, ML-DSA-87) keys are supported.`,
 		},
 		"kid": {
 			Type:        schema.TypeString,
@@ -64,6 +64,22 @@ func dataSourceJwksFromKeyRead(_ context.Context, d *schema.ResourceData, m inte
 		dataBytes = b64data
 	}
 	block, _ := pem.Decode(dataBytes)
+
+	// ML-DSA SPKI is not handled by crypto/x509 or jwx, so detect it and emit the
+	// RFC 9964 AKP JWK before the RSA/EC handling below.
+	mldsaDER := dataBytes
+	if block != nil {
+		mldsaDER = block.Bytes
+	}
+	if alg, pub, ok := mldsaFromSPKI(mldsaDER); ok {
+		jwks, id, mErr := mldsaJWK(alg, pub, d.Get("kid").(string), d.Get("use").(string), d.Get("alg").(string))
+		if mErr != nil {
+			return diag.FromErr(mErr)
+		}
+		d.SetId(id)
+		return diag.FromErr(d.Set("jwks", jwks))
+	}
+
 	if block != nil {
 		//handle pem encoded
 		keyData, err = ssh.ParseRawPrivateKey(dataBytes)

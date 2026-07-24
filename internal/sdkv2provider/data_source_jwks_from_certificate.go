@@ -183,7 +183,7 @@ func calculateKey(x509Cert *x509.Certificate, chain []*x509.Certificate, kid, us
 func processX5c(chain []*x509.Certificate) (*cert.Chain, error) {
 	var cc cert.Chain
 	for _, x509Cert := range chain {
-		if err := cc.Add(x509Cert.Raw); err != nil {
+		if err := cc.AddString(base64.StdEncoding.EncodeToString(x509Cert.Raw)); err != nil {
 			return nil, err
 		}
 	}

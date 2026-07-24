@@ -1,9 +1,19 @@
 package sdkv2provider
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/base64"
+	"encoding/json"
+	"encoding/pem"
 	"fmt"
+	"math/big"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -164,31 +174,33 @@ qKCXwvYMUg37RUM3IiS2vv56HJtyLG+EuJn4YIOy+Y1zzX7fIDfnwIE1V7a05oFa
 tiMEtoLvP4ECKYNuFauGb4JZspcneEoyZXiCpRw=
 -----END CERTIFICATE-----
 `
-	SingleEcCertificatePem = `
------BEGIN CERTIFICATE-----
-MIIBDDCBs6ADAgECAgEBMAoGCCqGSM49BAMCMA8xDTALBgNVBAMTBHRlc3QwIBgP
-MDAwMTAxMDEwMDAwMDBaFw0yNDA5MjExNTMyNTJaMA8xDTALBgNVBAMTBHRlc3Qw
-WTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATSSU00yCYNgTIIdycijLRFixiPzp2s
-9bQ6uwdSzlUjx2VHO3lROOO6AH3KwW7Tz7fRfqwPm9Np521DCSq6lNTFMAoGCCqG
-SM49BAMCA0gAMEUCIEuvIrZYc7kcuePTE3DlaWtFLrvxFNChC+KmNUyfFHT9AiEA
-/qmkHan0+zQLgLbvrOlggrweoDeC521Pav/wE3TqYf0=
------END CERTIFICATE-----
-`
 )
 
-func TestAccJwksFromCertificateDataSource(t *testing.T) {
-	//key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	//if err != nil {
-	//	t.Fatalf("failed to generate ECDSA key: %v", err)
-	//}
-	//template := x509.Certificate{SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "test"}, NotAfter: time.Now().Add(1024 * time.Hour)}
-	//cert, err := x509.CreateCertificate(rand.Reader, &template, &template, key.Public(), key)
-	//if err != nil {
-	//	t.Fatalf("failed to create certificate: %v", err)
-	//}
-	//certPem := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert})
-	//t.Logf("certPem: \n%s", certPem)
+func generateEcCert(t *testing.T) (certPEM string, parsed *x509.Certificate) {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("failed to generate ECDSA key: %v", err)
+	}
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "test"},
+		NotBefore:    time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+		NotAfter:     time.Now().Add(10 * 365 * 24 * time.Hour),
+	}
+	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, key.Public(), key)
+	if err != nil {
+		t.Fatalf("failed to create certificate: %v", err)
+	}
+	parsed, err = x509.ParseCertificate(certDER)
+	if err != nil {
+		t.Fatalf("failed to parse generated certificate: %v", err)
+	}
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})), parsed
+}
 
+func TestAccJwksFromCertificateDataSource(t *testing.T) {
+	ecCertPem, ecCert := generateEcCert(t)
 	resourceName := "data.jwks_from_certificate.test"
 
 	resource.Test(t, resource.TestCase{
@@ -235,9 +247,34 @@ func TestAccJwksFromCertificateDataSource(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccJwksFromCertificateDataSourceConfig(SingleEcCertificatePem),
+				Config: testAccJwksFromCertificateDataSourceConfig(ecCertPem),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "jwks", `{"crv":"P-256","kid":"B_CNvutHLfhm-wXTH6m6bYoHt9TJWOq6c-1VNk8TudU=","kty":"EC","x":"0klNNMgmDYEyCHcnIoy0RYsYj86drPW0OrsHUs5VI8c","x5c":["MIIBDDCBs6ADAgECAgEBMAoGCCqGSM49BAMCMA8xDTALBgNVBAMTBHRlc3QwIBgPMDAwMTAxMDEwMDAwMDBaFw0yNDA5MjExNTMyNTJaMA8xDTALBgNVBAMTBHRlc3QwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATSSU00yCYNgTIIdycijLRFixiPzp2s9bQ6uwdSzlUjx2VHO3lROOO6AH3KwW7Tz7fRfqwPm9Np521DCSq6lNTFMAoGCCqGSM49BAMCA0gAMEUCIEuvIrZYc7kcuePTE3DlaWtFLrvxFNChC+KmNUyfFHT9AiEA/qmkHan0+zQLgLbvrOlggrweoDeC521Pav/wE3TqYf0="],"x5t#S256":"B_CNvutHLfhm-wXTH6m6bYoHt9TJWOq6c-1VNk8TudU=","y":"ZUc7eVE447oAfcrBbtPPt9F-rA-b02nnbUMJKrqU1MU"}`),
+					resource.TestCheckResourceAttrWith(resourceName, "jwks", func(value string) error {
+						expectedKid := calculateCertificateThumbprint(ecCert)
+						expectedX5c := base64.StdEncoding.EncodeToString(ecCert.Raw)
+
+						var jwks map[string]interface{}
+						if err := json.Unmarshal([]byte(value), &jwks); err != nil {
+							return fmt.Errorf("jwks is not valid JSON: %w", err)
+						}
+						if jwks["kty"] != "EC" {
+							return fmt.Errorf("expected kty=EC, got %v", jwks["kty"])
+						}
+						if jwks["crv"] != "P-256" {
+							return fmt.Errorf("expected crv=P-256, got %v", jwks["crv"])
+						}
+						if jwks["kid"] != expectedKid {
+							return fmt.Errorf("expected kid=%s, got %v", expectedKid, jwks["kid"])
+						}
+						x5c, ok := jwks["x5c"].([]interface{})
+						if !ok || len(x5c) != 1 {
+							return fmt.Errorf("expected x5c to have 1 entry, got %v", jwks["x5c"])
+						}
+						if x5c[0].(string) != expectedX5c {
+							return fmt.Errorf("expected x5c[0]=%s, got %v", expectedX5c, x5c[0])
+						}
+						return nil
+					}),
 				),
 			},
 		},

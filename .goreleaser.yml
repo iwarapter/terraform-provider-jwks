@@ -1,3 +1,5 @@
+version: 2
+
 before:
   hooks:
     - go mod tidy
@@ -23,10 +25,13 @@ builds:
       - goos: openbsd
         goarch: arm64
     binary: '{{ .ProjectName }}_v{{ .Version }}'
-    flags: |
-      -gcflags="-trimpath=$GOPATH" -asmflags="-trimpath=$GOPATH"
+    gcflags:
+      - all=-trimpath={{ .Env.GOPATH }}
+    asmflags:
+      - all=-trimpath={{ .Env.GOPATH }}
 archives:
-  - format: zip
+  - formats:
+      - zip
     name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
 checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
@@ -35,7 +40,7 @@ signs:
   - artifacts: checksum
     args:
       - "--local-user"
-      - "BE9710A9C84DA5AA" # Replace this with your GPG signing key ID
+      - "BE9710A9C84DA5AA"
       - "--output"
       - "${signature}"
       - "--detach-sign"
@@ -43,4 +48,4 @@ signs:
 release:
   draft: true
 changelog:
-  skip: true
+  disable: true

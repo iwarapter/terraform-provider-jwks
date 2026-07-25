@@ -25,10 +25,8 @@ builds:
       - goos: openbsd
         goarch: arm64
     binary: '{{ .ProjectName }}_v{{ .Version }}'
-    gcflags:
-      - all=-trimpath={{ .Env.GOPATH }}
-    asmflags:
-      - all=-trimpath={{ .Env.GOPATH }}
+    flags:
+      - -trimpath
 archives:
   - formats:
       - zip

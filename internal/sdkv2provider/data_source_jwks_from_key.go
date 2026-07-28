@@ -31,7 +31,7 @@ func dataSourceJwksFromKeySchema() map[string]*schema.Schema {
 		"key": {
 			Type:        schema.TypeString,
 			Required:    true,
-			Description: `Requires either a pem encoded or base64 der encoded public or private key.`,
+			Description: `Requires either a pem encoded or base64 der encoded public or private key. For ML-DSA keys, provide the raw public key bytes (base64-encoded) or the 32-byte seed (base64-encoded) with the alg field set.`,
 		},
 		"kid": {
 			Type:        schema.TypeString,
@@ -46,7 +46,7 @@ func dataSourceJwksFromKeySchema() map[string]*schema.Schema {
 		"alg": {
 			Type:        schema.TypeString,
 			Optional:    true,
-			Description: `Used to populate the alg field of the JWK.`,
+			Description: `Used to populate the alg field of the JWK. Required when providing a 32-byte ML-DSA private seed to identify the parameter set (ML-DSA-44, ML-DSA-65, or ML-DSA-87).`,
 		},
 		"jwks": {
 			Type:        schema.TypeString,
@@ -72,7 +72,10 @@ func dataSourceJwksFromKeyRead(_ context.Context, d *schema.ResourceData, m inte
 		if err != nil {
 			keyData, err = x509.ParsePKIXPublicKey(block.Bytes)
 			if err != nil {
-				return diag.Errorf("unable to parse private or public key pem")
+				keyData, err = parseMLDSAKey(d, block.Bytes)
+				if err != nil {
+					return diag.Errorf("unable to parse private or public key pem")
+				}
 			}
 		}
 	} else {
@@ -160,6 +163,6 @@ func parseMLDSAKey(d *schema.ResourceData, b []byte) (interface{}, error) {
 		}
 		return mldsa.NewPrivateKey(params, b)
 	default:
-		return nil, fmt.Errorf("unable to parse private or public key pem")
+		return nil, fmt.Errorf("unable to parse key: not a recognised DER, SSH, or ML-DSA format")
 	}
 }

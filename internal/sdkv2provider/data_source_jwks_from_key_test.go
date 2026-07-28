@@ -2,10 +2,12 @@ package sdkv2provider
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"testing"
 
+	"filippo.io/mldsa"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -153,6 +155,42 @@ func TestAccJwksFromKeyDataSource(t *testing.T) {
 	})
 }
 
+func TestAccJwksFromKeyMLDSADataSource(t *testing.T) {
+	resourceName := "data.jwks_from_key.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: testAccProviders,
+		CheckDestroy:             testAccCheckJwksFromKeyDataSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccJwksFromKeyMLDSAPublicConfig(mlDSAKeyBase64(mldsa.MLDSA44())),
+				Check:  checkMLDSAJWK(resourceName, "ML-DSA-44", false),
+			},
+			{
+				Config: testAccJwksFromKeyMLDSAPublicConfig(mlDSAKeyBase64(mldsa.MLDSA65())),
+				Check:  checkMLDSAJWK(resourceName, "ML-DSA-65", false),
+			},
+			{
+				Config: testAccJwksFromKeyMLDSAPublicConfig(mlDSAKeyBase64(mldsa.MLDSA87())),
+				Check:  checkMLDSAJWK(resourceName, "ML-DSA-87", false),
+			},
+			{
+				Config: testAccJwksFromKeyMLDSAPrivateConfig(mlDSASeedBase64(), "ML-DSA-44"),
+				Check:  checkMLDSAJWK(resourceName, "ML-DSA-44", true),
+			},
+			{
+				Config: testAccJwksFromKeyMLDSAPrivateConfig(mlDSASeedBase64(), "ML-DSA-65"),
+				Check:  checkMLDSAJWK(resourceName, "ML-DSA-65", true),
+			},
+			{
+				Config: testAccJwksFromKeyMLDSAPrivateConfig(mlDSASeedBase64(), "ML-DSA-87"),
+				Check:  checkMLDSAJWK(resourceName, "ML-DSA-87", true),
+			},
+		},
+	})
+}
+
 func testAccCheckJwksFromKeyDataSourceDestroy(s *terraform.State) error {
 	return nil
 }
@@ -218,4 +256,74 @@ func ecPrivateKeyDer() string {
 func ecPublicKeyDer() string {
 	block, _ := pem.Decode([]byte(ECPublicKey))
 	return base64.StdEncoding.EncodeToString(block.Bytes)
+}
+
+// mlDSAKeyBase64 returns a base64 std-encoded ML-DSA public key for the given
+// parameter set, derived from a fixed all-zeros seed for test determinism.
+func mlDSAKeyBase64(params *mldsa.Parameters) string {
+	seed := make([]byte, 32)
+	sk, err := mldsa.NewPrivateKey(params, seed)
+	if err != nil {
+		panic(err)
+	}
+	return base64.StdEncoding.EncodeToString(sk.PublicKey().Bytes())
+}
+
+// mlDSASeedBase64 returns the base64 std-encoding of a fixed all-zeros 32-byte
+// seed, usable as ML-DSA private key input.
+func mlDSASeedBase64() string {
+	return base64.StdEncoding.EncodeToString(make([]byte, 32))
+}
+
+// checkMLDSAJWK returns a TestCheckFunc that parses the jwks attribute as JSON
+// and asserts kty=="AKP", alg==wantAlg, pub is non-empty, and (if wantPriv)
+// priv is non-empty.
+func checkMLDSAJWK(resourceName, wantAlg string, wantPriv bool) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %s not found", resourceName)
+		}
+		raw := rs.Primary.Attributes["jwks"]
+		var m map[string]interface{}
+		if err := json.Unmarshal([]byte(raw), &m); err != nil {
+			return fmt.Errorf("jwks is not valid JSON: %w", err)
+		}
+		if m["kty"] != "AKP" {
+			return fmt.Errorf("expected kty=AKP, got %v", m["kty"])
+		}
+		if m["alg"] != wantAlg {
+			return fmt.Errorf("expected alg=%s, got %v", wantAlg, m["alg"])
+		}
+		if _, ok := m["pub"]; !ok {
+			return fmt.Errorf("expected pub field to be present")
+		}
+		if wantPriv {
+			if _, ok := m["priv"]; !ok {
+				return fmt.Errorf("expected priv field to be present")
+			}
+		} else {
+			if _, ok := m["priv"]; ok {
+				return fmt.Errorf("expected priv field to be absent for public key JWK")
+			}
+		}
+		return nil
+	}
+}
+
+func testAccJwksFromKeyMLDSAPublicConfig(keyBase64 string) string {
+	return fmt.Sprintf(`
+data "jwks_from_key" "test" {
+  key = "%s"
+}
+`, keyBase64)
+}
+
+func testAccJwksFromKeyMLDSAPrivateConfig(seedBase64, alg string) string {
+	return fmt.Sprintf(`
+data "jwks_from_key" "test" {
+  key = "%s"
+  alg = "%s"
+}
+`, seedBase64, alg)
 }

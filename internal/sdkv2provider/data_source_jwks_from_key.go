@@ -8,8 +8,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 
-	"github.com/lestrrat-go/jwx/v3/jwk"
+	"filippo.io/mldsa"
+	"github.com/lestrrat-go/jwx/v4/jwk"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -82,14 +84,17 @@ func dataSourceJwksFromKeyRead(_ context.Context, d *schema.ResourceData, m inte
 				if err != nil {
 					keyData, err = x509.ParsePKIXPublicKey(dataBytes)
 					if err != nil {
-						return diag.Errorf("unable to parse private or public key pem")
+						keyData, err = parseMLDSAKey(d, dataBytes)
+						if err != nil {
+							return diag.FromErr(err)
+						}
 					}
 				}
 			}
 		}
 	}
 
-	key, err := jwk.Import(keyData)
+	key, err := jwk.Import[jwk.Key](keyData)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -124,4 +129,37 @@ func dataSourceJwksFromKeyRead(_ context.Context, d *schema.ResourceData, m inte
 	}
 	d.SetId(hex.EncodeToString(tb))
 	return diag.FromErr(d.Set("jwks", string(b)))
+}
+
+// parseMLDSAKey detects ML-DSA keys by raw byte length. Public keys are
+// unambiguous (1312/1952/2592 bytes). A 32-byte input is treated as a
+// private-key seed and requires the alg field to identify the parameter set.
+func parseMLDSAKey(d *schema.ResourceData, b []byte) (interface{}, error) {
+	switch len(b) {
+	case mldsa.MLDSA44().PublicKeySize():
+		return mldsa.NewPublicKey(mldsa.MLDSA44(), b)
+	case mldsa.MLDSA65().PublicKeySize():
+		return mldsa.NewPublicKey(mldsa.MLDSA65(), b)
+	case mldsa.MLDSA87().PublicKeySize():
+		return mldsa.NewPublicKey(mldsa.MLDSA87(), b)
+	case 32:
+		algVal, ok := d.GetOk("alg")
+		if !ok {
+			return nil, fmt.Errorf("32-byte input requires alg set to ML-DSA-44, ML-DSA-65, or ML-DSA-87")
+		}
+		var params *mldsa.Parameters
+		switch algVal.(string) {
+		case "ML-DSA-44":
+			params = mldsa.MLDSA44()
+		case "ML-DSA-65":
+			params = mldsa.MLDSA65()
+		case "ML-DSA-87":
+			params = mldsa.MLDSA87()
+		default:
+			return nil, fmt.Errorf("unrecognised ML-DSA alg %q: must be ML-DSA-44, ML-DSA-65, or ML-DSA-87", algVal.(string))
+		}
+		return mldsa.NewPrivateKey(params, b)
+	default:
+		return nil, fmt.Errorf("unable to parse private or public key pem")
+	}
 }

@@ -10,6 +10,14 @@ description: |-
 
 Calculates a JSON Web Key Set from a given public or private key.
 
+Supported key types:
+
+- RSA public/private keys (PEM or base64-encoded DER)
+- EC public/private keys (PEM or base64-encoded DER)
+- SSH private keys (PEM)
+- ML-DSA-44, ML-DSA-65, ML-DSA-87 public keys (base64-encoded raw bytes)
+- ML-DSA-44, ML-DSA-65, ML-DSA-87 private seeds (base64-encoded 32-byte seed; requires `alg`)
+
 ## Example Usage
 
 ```terraform
@@ -31,11 +39,44 @@ data "jwks_from_key" "base64_der_example" {
   key = data.aws_kms_public_key.example.public_key
 }
 
-data "jwks_from_key" "base64_der_example" {
+data "jwks_from_key" "base64_der_with_metadata" {
   key = data.aws_kms_public_key.example.public_key
   kid = "123"
   use = "sig"
   alg = "RS256"
+}
+
+# ML-DSA-44 public key (1312 raw bytes, base64-encoded).
+# Provide the raw public key bytes — not PEM, not DER.
+# filebase64() reads the file and base64-encodes it automatically.
+data "jwks_from_key" "mldsa44_public" {
+  key = filebase64("${path.module}/mldsa44_public.key")
+  kid = "my-mldsa44-key"
+  use = "sig"
+}
+
+# ML-DSA-65 public key (1952 raw bytes, base64-encoded).
+data "jwks_from_key" "mldsa65_public" {
+  key = filebase64("${path.module}/mldsa65_public.key")
+  kid = "my-mldsa65-key"
+  use = "sig"
+}
+
+# ML-DSA-87 public key (2592 raw bytes, base64-encoded).
+data "jwks_from_key" "mldsa87_public" {
+  key = filebase64("${path.module}/mldsa87_public.key")
+  kid = "my-mldsa87-key"
+  use = "sig"
+}
+
+# ML-DSA private seed (32 raw bytes, base64-encoded).
+# The alg field is required to identify the parameter set because all
+# ML-DSA parameter sets use a 32-byte seed and the size alone is ambiguous.
+data "jwks_from_key" "mldsa44_seed" {
+  key = data.aws_secretsmanager_secret_version.mldsa_seed.secret_string
+  alg = "ML-DSA-44"
+  kid = "my-mldsa44-signing-key"
+  use = "sig"
 }
 ```
 
@@ -44,17 +85,15 @@ data "jwks_from_key" "base64_der_example" {
 
 ### Required
 
-- `key` (String) Requires either a pem encoded or base64 der encoded public or private key.
+- `key` (String) Requires either a pem encoded or base64 der encoded public or private key. For ML-DSA keys, provide the raw public key bytes (base64-encoded) or the 32-byte seed (base64-encoded) with the `alg` field set.
 
 ### Optional
 
+- `alg` (String) Used to populate the `alg` field of the JWK. Required when providing a 32-byte ML-DSA private seed to identify the parameter set (`ML-DSA-44`, `ML-DSA-65`, or `ML-DSA-87`).
 - `kid` (String) Used to populate the `kid` field of the JWK.
 - `use` (String) Used to populate the `use` field of the JWK.
-- `alg` (String) Used to populate the `alg` field of the JWK.
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
 - `jwks` (String) The calculated JSON Web Key Sets.
-
-

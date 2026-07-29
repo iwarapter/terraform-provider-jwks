@@ -10,13 +10,19 @@ description: |-
 
 Calculates a JSON Web Key Set from a given public or private key.
 
-Supported key types:
+Supported key formats:
 
-- RSA public/private keys (PEM or base64-encoded DER)
-- EC public/private keys (PEM or base64-encoded DER)
-- SSH private keys (PEM)
-- ML-DSA-44, ML-DSA-65, ML-DSA-87 public keys (base64-encoded raw bytes)
-- ML-DSA-44, ML-DSA-65, ML-DSA-87 private seeds (base64-encoded 32-byte seed; requires `alg`)
+| Key type | Accepted input formats |
+|---|---|
+| RSA, EC, Ed25519 public keys | PKIX PEM (`BEGIN PUBLIC KEY`) or base64-encoded DER |
+| RSA, EC, Ed25519 private keys | OpenSSH PEM, PKCS#1 PEM, SEC1 PEM, or base64-encoded DER |
+| ML-DSA-44/65/87 public keys | PKIX PEM (`BEGIN PUBLIC KEY`) or raw base64-encoded bytes |
+| ML-DSA-44/65/87 private seeds | PKCS#8 PEM (`BEGIN PRIVATE KEY`) or raw base64-encoded 32-byte seed (requires `alg`) |
+
+ML-DSA PKIX and PKCS#8 PEM files can be generated with Go 1.27+ using `crypto/x509.MarshalPKIXPublicKey` / `MarshalPKCS8PrivateKey`. The PKIX format uses the OIDs standardised in [draft-ietf-lamps-dilithium-certificates](https://datatracker.ietf.org/doc/draft-ietf-lamps-dilithium-certificates/):
+- ML-DSA-44: `2.16.840.1.101.3.4.3.17`
+- ML-DSA-65: `2.16.840.1.101.3.4.3.18`
+- ML-DSA-87: `2.16.840.1.101.3.4.3.19`
 
 ## Example Usage
 
@@ -46,36 +52,43 @@ data "jwks_from_key" "base64_der_with_metadata" {
   alg = "RS256"
 }
 
-# ML-DSA-44 public key (1312 raw bytes, base64-encoded).
-# Provide the raw public key bytes — not PEM, not DER.
-# filebase64() reads the file and base64-encodes it automatically.
+# ML-DSA-44 public key in PKIX/SubjectPublicKeyInfo PEM format (BEGIN PUBLIC KEY).
+# The OID (2.16.840.1.101.3.4.3.17) identifies ML-DSA-44; no alg attribute needed.
+# Generate with: go1.27+ crypto/x509.MarshalPKIXPublicKey or openssl pkey (1.x+).
 data "jwks_from_key" "mldsa44_public" {
-  key = filebase64("${path.module}/mldsa44_public.key")
+  key = file("${path.module}/mldsa44_public.pem")
   kid = "my-mldsa44-key"
   use = "sig"
 }
 
-# ML-DSA-65 public key (1952 raw bytes, base64-encoded).
+# ML-DSA-65 public key in PKIX format (OID 2.16.840.1.101.3.4.3.18).
 data "jwks_from_key" "mldsa65_public" {
-  key = filebase64("${path.module}/mldsa65_public.key")
+  key = file("${path.module}/mldsa65_public.pem")
   kid = "my-mldsa65-key"
   use = "sig"
 }
 
-# ML-DSA-87 public key (2592 raw bytes, base64-encoded).
+# ML-DSA-87 public key in PKIX format (OID 2.16.840.1.101.3.4.3.19).
 data "jwks_from_key" "mldsa87_public" {
-  key = filebase64("${path.module}/mldsa87_public.key")
+  key = file("${path.module}/mldsa87_public.pem")
   kid = "my-mldsa87-key"
   use = "sig"
 }
 
-# ML-DSA private seed (32 raw bytes, base64-encoded).
-# The alg field is required to identify the parameter set because all
-# ML-DSA parameter sets use a 32-byte seed and the size alone is ambiguous.
-data "jwks_from_key" "mldsa44_seed" {
+# ML-DSA-44 private key in PKCS#8/OneAsymmetricKey PEM format (BEGIN PRIVATE KEY).
+# The OID identifies the parameter set; no alg attribute is required.
+data "jwks_from_key" "mldsa44_private" {
+  key = file("${path.module}/mldsa44_private.pem")
+  kid = "my-mldsa44-signing-key"
+  use = "sig"
+}
+
+# ML-DSA-44 private seed as raw base64 (32 bytes). The alg field is required
+# because a raw 32-byte seed is ambiguous across parameter sets.
+data "jwks_from_key" "mldsa44_seed_raw" {
   key = data.aws_secretsmanager_secret_version.mldsa_seed.secret_string
   alg = "ML-DSA-44"
-  kid = "my-mldsa44-signing-key"
+  kid = "my-mldsa44-raw-seed"
   use = "sig"
 }
 ```
@@ -85,11 +98,11 @@ data "jwks_from_key" "mldsa44_seed" {
 
 ### Required
 
-- `key` (String) Requires either a pem encoded or base64 der encoded public or private key. For ML-DSA keys, provide the raw public key bytes (base64-encoded) or the 32-byte seed (base64-encoded) with the `alg` field set.
+- `key` (String) Requires a PEM-encoded or base64 DER-encoded public or private key. ML-DSA public keys may be provided in PKIX PEM format (`BEGIN PUBLIC KEY`) or as raw base64-encoded bytes. ML-DSA private seeds may be provided in PKCS#8 PEM format (`BEGIN PRIVATE KEY`) or as a raw base64-encoded 32-byte seed (requires `alg`).
 
 ### Optional
 
-- `alg` (String) Used to populate the `alg` field of the JWK. Required when providing a 32-byte ML-DSA private seed to identify the parameter set (`ML-DSA-44`, `ML-DSA-65`, or `ML-DSA-87`).
+- `alg` (String) Used to populate the `alg` field of the JWK. Required when providing a raw 32-byte ML-DSA private seed to identify the parameter set (`ML-DSA-44`, `ML-DSA-65`, or `ML-DSA-87`). Not required for PKCS#8 PEM, which is self-describing.
 - `kid` (String) Used to populate the `kid` field of the JWK.
 - `use` (String) Used to populate the `use` field of the JWK.
 

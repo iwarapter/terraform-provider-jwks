@@ -16,8 +16,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/lestrrat-go/jwx/v3/cert"
-	"github.com/lestrrat-go/jwx/v3/jwk"
+	"github.com/lestrrat-go/jwx/v4/cert"
+	"github.com/lestrrat-go/jwx/v4/jwk"
 )
 
 func dataSourceJwksFromCertificate() *schema.Resource {
@@ -144,7 +144,7 @@ func calculateCertificateThumbprint(x509Cert *x509.Certificate) string {
 }
 
 func calculateKey(x509Cert *x509.Certificate, chain []*x509.Certificate, kid, use, alg string) (jwk.Key, error) {
-	key, err := jwk.Import(x509Cert.PublicKey)
+	key, err := jwk.Import[jwk.Key](x509Cert.PublicKey)
 	if err != nil {
 		return nil, err
 	}

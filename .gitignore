@@ -1,0 +1,7 @@
+# Local Terraform development files
+main.tf
+dev.tfrc
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup

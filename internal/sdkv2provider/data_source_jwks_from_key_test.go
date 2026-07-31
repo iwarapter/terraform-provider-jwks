@@ -54,6 +54,7 @@ yCqmr8yjxkKJDVC2uRrr+sTSxfh7r6v24u/vp/QTmBIAlNPgadVAZw17iNNb7vjV
 7QIDAQAB
 -----END PUBLIC KEY-----
 `
+
 	ECPrivateKey = `
 -----BEGIN EC PRIVATE KEY-----
 MIGkAgEBBDBYv+Kxcvmf1THbJ3amFFEwf9o8JnBV+CFQSERT0XQvQQqiLswPShGK
@@ -68,6 +69,39 @@ MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEQnSqFbKGdEiz/g0CoZFXBAvsMMbMBqqn
 Z3jJ/zrLxuBShDTmrsRoU7MCOALbt04fFoRI8H06aS1Wq1XsAbMiMLUqpl5joOWe
 UChxyPb0v+7B86IE9299UHBpbAfcnthd
 -----END PUBLIC KEY-----`
+
+	MLDSAPublicKey = `
+-----BEGIN PUBLIC KEY-----
+MIIFMjALBglghkgBZQMEAxEDggUhALpx+fZOEbrrWPqcb7tuFOYfGGQ9q0lbR1Oa
+kWbKAZgTHET4JrvVbjTlXbXl4tczSF456iYPxgAMXqS6gNNFXN5TtG80SCrt/VRQ
+/C4bpPJdFfnBRCQvs5u1IocYkDDFBJjhcXt8dYsZCmdI6pqj96yq8sfLUm7XF8n3
+muuEIU+lzY3tkqDD+hVYgQ8SxwUKNncI0ZbNJOWvl0kErtjkzohy6GlrC3vKUORS
+zX0w6ppK2sAxHWcsa96EliQLB0MUY3CIlc2br8MWMtc5dkk4j9r8v30wWj3ppJXs
+p0M6j4O6DwslxBPG45yW631pGzTTfON/HurRzyF+Je807s8/fGD4S47f3ehAXU+D
+JXbGHvmOCi8o2hh3AJU5JPaGuUYUcFvPU9M/7dQ0jt3b3yi1Bl4fIHdQQ+hc+TH4
+KReTY6Gn50BKg47AAIawl2OG/mN8mCRHV+P3ad3URnRxv61nD5oF+CRu5Qp7Hq+H
+/EBpw64qogMyWBF3kvC81J4IP9G8dJar/ynMlOSGiyEhTtMWUlOZphD73UqA58gH
+FfKVeOKoS7QL3dvZ9HoRtufaEYobZY01norvVetGtTdrW2VZeZhKkivuv8WbzWAN
+UwnczXLb8Hh9uLp1e1N8Hq/VwPUOpLyVg1SeKCmkLCjKwkjJbXgSTEcVmxiu3XVK
+uhexnUMPt49jPqnSb1SpvVD42Pa3NZT4KJdufqCcU7u58RpWyVB/uJuaXrwDejcm
+epX4W41kypcZKxCmb0F7P2H+nKVxMKSP2SXq4qtVAtVxyKUZA8HTmPTB92p+EXQ5
+dq/bxpfyMJSjzXYf+Whd4y4J+zwordRTSQMAvHyJ3AF4AJYHFyKUV3XyZOGwYjvP
+RhnHEsg4dhIF2HaRt17zYBlsu56bkqDUxO1iMm5QJNd1ELjuLHQmzCLq4gncnxO9
+5r8I9ecYG9O0WUULRRpRU5pxXCHWfdMw61lw2wDZ7b+ygisDb6E7r+uG2Nx4hm4/
+jUPlPXjMpVlab6+Ia13BEvHPStz6h1gA2QtIiDr5cxb+FQaHP8FX5XDqy/0iKGjR
+QjQQGWavtr+ZQIKSU6lTraifx1a2qEn3CsuYOOafqlC7p14+icKttX6G0IirmwSi
+jmcHCRciQ+xeAAilzq8/hyL0hzAllv/XVa0bgqScNLNGlRW0aqKQzYbuOOp6m+Px
+A2EDNbUxzKMz3f4ysUUQ9LB++V/GaE6MRUqSwQ27XVnHp8Y/swX+iBln2Z5mnrYy
+hAWCVgu0A0MdQPdaSVSQhIIngpKCH06pHkLnj6SMruPINhRtz9c40RfpLpoVE30o
+6OaktGImUMtBNQTLOjNdRL7sV0bBwpSx6MuZy2CNko+M41Y2MsUh8j0TxhqPYcAd
++Mlsc2DbTzxoql0v3TQqYv80WcEWOJQhq0PoWExFiCtQ5uTpbbbwuP3okNXb+tzY
+hpC0SeZCQN2yAjdH8wg2PjAap3dXFp/GFQYo1ZILWqGrHIy/RMsA4CXXh51ytHnj
+r1MRx4VyVZDanIm5/DuEUHaVVOtE0gProruu+crSI3ARwupE7/APKZpI/+KMqT3f
+hfdmCCQu+NbMJGEKHiB4/KxPk4XDFJBeyqguVTkW2U0afB7GUqoIiXCD2qLrsXdf
+vEca4nd315BOqfG5K8rD2KMVhCYIe2RbEQjw1l/sk3icBTdDyhT9Y9BemLZS3yuc
+L/nOBfGUBwP/snP4Dg4nMuyplg2YG0z9O3u4BFs8ODBUa53Y2w0=
+-----END PUBLIC KEY-----
+`
 )
 
 func TestAccJwksFromKeyDataSource(t *testing.T) {
@@ -102,7 +136,12 @@ func TestAccJwksFromKeyDataSource(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "jwks", `{"crv":"P-384","kty":"EC","x":"QnSqFbKGdEiz_g0CoZFXBAvsMMbMBqqnZ3jJ_zrLxuBShDTmrsRoU7MCOALbt04f","y":"FoRI8H06aS1Wq1XsAbMiMLUqpl5joOWeUChxyPb0v-7B86IE9299UHBpbAfcnthd"}`),
 				),
 			},
-
+			{
+				Config: testAccJwksFromKeyDataSourceConfig(MLDSAPublicKey),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "jwks", `{"alg":"ML-DSA-44","kty":"AKP","pub":"unH59k4RuutY-pxvu24U5h8YZD2rSVtHU5qRZsoBmBMcRPgmu9VuNOVdteXi1zNIXjnqJg_GAAxepLqA00Vc3lO0bzRIKu39VFD8Lhuk8l0V-cFEJC-zm7UihxiQMMUEmOFxe3x1ixkKZ0jqmqP3rKryx8tSbtcXyfea64QhT6XNje2SoMP6FViBDxLHBQo2dwjRls0k5a-XSQSu2OTOiHLoaWsLe8pQ5FLNfTDqmkrawDEdZyxr3oSWJAsHQxRjcIiVzZuvwxYy1zl2STiP2vy_fTBaPemkleynQzqPg7oPCyXEE8bjnJbrfWkbNNN8438e6tHPIX4l7zTuzz98YPhLjt_d6EBdT4MldsYe-Y4KLyjaGHcAlTkk9oa5RhRwW89T0z_t1DSO3dvfKLUGXh8gd1BD6Fz5MfgpF5NjoafnQEqDjsAAhrCXY4b-Y3yYJEdX4_dp3dRGdHG_rWcPmgX4JG7lCnser4f8QGnDriqiAzJYEXeS8LzUngg_0bx0lqv_KcyU5IaLISFO0xZSU5mmEPvdSoDnyAcV8pV44qhLtAvd29n0ehG259oRihtljTWeiu9V60a1N2tbZVl5mEqSK-6_xZvNYA1TCdzNctvweH24unV7U3wer9XA9Q6kvJWDVJ4oKaQsKMrCSMlteBJMRxWbGK7ddUq6F7GdQw-3j2M-qdJvVKm9UPjY9rc1lPgol25-oJxTu7nxGlbJUH-4m5pevAN6NyZ6lfhbjWTKlxkrEKZvQXs_Yf6cpXEwpI_ZJeriq1UC1XHIpRkDwdOY9MH3an4RdDl2r9vGl_IwlKPNdh_5aF3jLgn7PCit1FNJAwC8fIncAXgAlgcXIpRXdfJk4bBiO89GGccSyDh2EgXYdpG3XvNgGWy7npuSoNTE7WIyblAk13UQuO4sdCbMIuriCdyfE73mvwj15xgb07RZRQtFGlFTmnFcIdZ90zDrWXDbANntv7KCKwNvoTuv64bY3HiGbj-NQ-U9eMylWVpvr4hrXcES8c9K3PqHWADZC0iIOvlzFv4VBoc_wVflcOrL_SIoaNFCNBAZZq-2v5lAgpJTqVOtqJ_HVraoSfcKy5g45p-qULunXj6Jwq21fobQiKubBKKOZwcJFyJD7F4ACKXOrz-HIvSHMCWW_9dVrRuCpJw0s0aVFbRqopDNhu446nqb4_EDYQM1tTHMozPd_jKxRRD0sH75X8ZoToxFSpLBDbtdWcenxj-zBf6IGWfZnmaetjKEBYJWC7QDQx1A91pJVJCEgieCkoIfTqkeQuePpIyu48g2FG3P1zjRF-kumhUTfSjo5qS0YiZQy0E1BMs6M11EvuxXRsHClLHoy5nLYI2Sj4zjVjYyxSHyPRPGGo9hwB34yWxzYNtPPGiqXS_dNCpi_zRZwRY4lCGrQ-hYTEWIK1Dm5OlttvC4_eiQ1dv63NiGkLRJ5kJA3bICN0fzCDY-MBqnd1cWn8YVBijVkgtaoascjL9EywDgJdeHnXK0eeOvUxHHhXJVkNqcibn8O4RQdpVU60TSA-uiu675ytIjcBHC6kTv8A8pmkj_4oypPd-F92YIJC741swkYQoeIHj8rE-ThcMUkF7KqC5VORbZTRp8HsZSqgiJcIPaouuxd1-8Rxrid3fXkE6p8bkrysPYoxWEJgh7ZFsRCPDWX-yTeJwFN0PKFP1j0F6YtlLfK5wv-c4F8ZQHA_-yc_gODicy7KmWDZgbTP07e7gEWzw4MFRrndjbDQ"}`),
+				),
+			},
 			{
 				Config: testAccJwksFromKeyDataSourceConfig(privateKeyDer()),
 				Check: resource.ComposeTestCheckFunc(
@@ -125,6 +164,12 @@ func TestAccJwksFromKeyDataSource(t *testing.T) {
 				Config: testAccJwksFromKeyDataSourceConfig(ecPublicKeyDer()),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "jwks", `{"crv":"P-384","kty":"EC","x":"QnSqFbKGdEiz_g0CoZFXBAvsMMbMBqqnZ3jJ_zrLxuBShDTmrsRoU7MCOALbt04f","y":"FoRI8H06aS1Wq1XsAbMiMLUqpl5joOWeUChxyPb0v-7B86IE9299UHBpbAfcnthd"}`),
+				),
+			},
+			{
+				Config: testAccJwksFromKeyDataSourceConfig(mldsaPublicKeyDer()),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "jwks", `{"alg":"ML-DSA-44","kty":"AKP","pub":"unH59k4RuutY-pxvu24U5h8YZD2rSVtHU5qRZsoBmBMcRPgmu9VuNOVdteXi1zNIXjnqJg_GAAxepLqA00Vc3lO0bzRIKu39VFD8Lhuk8l0V-cFEJC-zm7UihxiQMMUEmOFxe3x1ixkKZ0jqmqP3rKryx8tSbtcXyfea64QhT6XNje2SoMP6FViBDxLHBQo2dwjRls0k5a-XSQSu2OTOiHLoaWsLe8pQ5FLNfTDqmkrawDEdZyxr3oSWJAsHQxRjcIiVzZuvwxYy1zl2STiP2vy_fTBaPemkleynQzqPg7oPCyXEE8bjnJbrfWkbNNN8438e6tHPIX4l7zTuzz98YPhLjt_d6EBdT4MldsYe-Y4KLyjaGHcAlTkk9oa5RhRwW89T0z_t1DSO3dvfKLUGXh8gd1BD6Fz5MfgpF5NjoafnQEqDjsAAhrCXY4b-Y3yYJEdX4_dp3dRGdHG_rWcPmgX4JG7lCnser4f8QGnDriqiAzJYEXeS8LzUngg_0bx0lqv_KcyU5IaLISFO0xZSU5mmEPvdSoDnyAcV8pV44qhLtAvd29n0ehG259oRihtljTWeiu9V60a1N2tbZVl5mEqSK-6_xZvNYA1TCdzNctvweH24unV7U3wer9XA9Q6kvJWDVJ4oKaQsKMrCSMlteBJMRxWbGK7ddUq6F7GdQw-3j2M-qdJvVKm9UPjY9rc1lPgol25-oJxTu7nxGlbJUH-4m5pevAN6NyZ6lfhbjWTKlxkrEKZvQXs_Yf6cpXEwpI_ZJeriq1UC1XHIpRkDwdOY9MH3an4RdDl2r9vGl_IwlKPNdh_5aF3jLgn7PCit1FNJAwC8fIncAXgAlgcXIpRXdfJk4bBiO89GGccSyDh2EgXYdpG3XvNgGWy7npuSoNTE7WIyblAk13UQuO4sdCbMIuriCdyfE73mvwj15xgb07RZRQtFGlFTmnFcIdZ90zDrWXDbANntv7KCKwNvoTuv64bY3HiGbj-NQ-U9eMylWVpvr4hrXcES8c9K3PqHWADZC0iIOvlzFv4VBoc_wVflcOrL_SIoaNFCNBAZZq-2v5lAgpJTqVOtqJ_HVraoSfcKy5g45p-qULunXj6Jwq21fobQiKubBKKOZwcJFyJD7F4ACKXOrz-HIvSHMCWW_9dVrRuCpJw0s0aVFbRqopDNhu446nqb4_EDYQM1tTHMozPd_jKxRRD0sH75X8ZoToxFSpLBDbtdWcenxj-zBf6IGWfZnmaetjKEBYJWC7QDQx1A91pJVJCEgieCkoIfTqkeQuePpIyu48g2FG3P1zjRF-kumhUTfSjo5qS0YiZQy0E1BMs6M11EvuxXRsHClLHoy5nLYI2Sj4zjVjYyxSHyPRPGGo9hwB34yWxzYNtPPGiqXS_dNCpi_zRZwRY4lCGrQ-hYTEWIK1Dm5OlttvC4_eiQ1dv63NiGkLRJ5kJA3bICN0fzCDY-MBqnd1cWn8YVBijVkgtaoascjL9EywDgJdeHnXK0eeOvUxHHhXJVkNqcibn8O4RQdpVU60TSA-uiu675ytIjcBHC6kTv8A8pmkj_4oypPd-F92YIJC741swkYQoeIHj8rE-ThcMUkF7KqC5VORbZTRp8HsZSqgiJcIPaouuxd1-8Rxrid3fXkE6p8bkrysPYoxWEJgh7ZFsRCPDWX-yTeJwFN0PKFP1j0F6YtlLfK5wv-c4F8ZQHA_-yc_gODicy7KmWDZgbTP07e7gEWzw4MFRrndjbDQ"}`),
 				),
 			},
 			{
@@ -255,6 +300,11 @@ func ecPrivateKeyDer() string {
 
 func ecPublicKeyDer() string {
 	block, _ := pem.Decode([]byte(ECPublicKey))
+	return base64.StdEncoding.EncodeToString(block.Bytes)
+}
+
+func mldsaPublicKeyDer() string {
+	block, _ := pem.Decode([]byte(MLDSAPublicKey))
 	return base64.StdEncoding.EncodeToString(block.Bytes)
 }
 

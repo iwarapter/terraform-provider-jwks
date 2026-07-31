@@ -101,9 +101,15 @@ func dataSourceJwksFromKeyRead(_ context.Context, d *schema.ResourceData, m inte
 				if err != nil {
 					keyData, err = x509.ParsePKIXPublicKey(dataBytes)
 					if err != nil {
-						keyData, err = parseMLDSAKey(d, dataBytes)
+						keyData, err = parsePKIXMLDSAPublicKey(dataBytes)
 						if err != nil {
-							return diag.FromErr(err)
+							keyData, err = parsePKCS8MLDSAPrivateKey(dataBytes)
+							if err != nil {
+								keyData, err = parseMLDSAKey(d, dataBytes)
+								if err != nil {
+									return diag.FromErr(err)
+								}
+							}
 						}
 					}
 				}
